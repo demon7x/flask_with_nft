@@ -1,0 +1,399 @@
+<html>
+  <head>
+    <script src="/static/js/p5.min.js"></script>
+    <script src="/static/js/CCapture.all.min.js"></script>
+    <script src="/static/js/webm-writer-0.2.0.js"></script>
+    <script src="/static/js/gif.js"></script>
+    <script src="/static/js/tar.js"></script>
+    <script src="/static/js/download.js"></script>
+    <script>
+      var cap = new CCapture( {
+	      framerate: 60,
+        format: "gif",
+        workersPath:"./tmp/",
+	      verbose: true
+        } );
+
+    </script>
+   
+  </head>
+  <body>
+    <main>
+        <script>
+var img;
+let particles = [];
+let fps;
+let draw_count = 0;
+let n = 0 ;
+let log_n = [];
+let tint_count = 5.0;
+let gameStarted = false;
+var change_img_status = false;
+
+
+function preload() {
+  img = loadImage("static/assets/QS{{index_name}}.jpg");
+}
+
+function setup() {
+  noCanvas();
+  cvn = createCanvas(img.width, img.height);
+  //createCanvas(100, 100);
+  //background(img,0,0);
+  //cvn.position(100,200);
+  start_btn = createButton("Start");
+  start_btn.mousePressed(start_draw);
+  start_btn.position(img.width+20,10);
+
+  stop_btn = createButton("Stop");
+  stop_btn.mousePressed(stop_draw);
+  stop_btn.position(img.width+80,10);
+  
+  //reset_button = createButton("Clear");
+  //reset_button.position(img.width+100,10);
+
+
+  c = createButton("Count");
+  c.position(img.width+20,50)
+  max_count_slider = createSlider(10,1000,150,10);
+  max_count_slider.position(c.x+60,50);
+  max_count_slider.input(max_count_changed);
+  max_count_box = createInput();
+  max_count_box.position(max_count_slider.x+max_count_slider.width+30,50);
+  max_count_box.value(max_count_slider.value()+50);
+
+  r = createButton("Res");
+  r.position(img.width+20,100)
+  res_slider = createSlider(5,20,5);
+  res_slider.position(r.x+r.width+20,100);
+  res_slider.input(res_changed);
+  res_box = createInput();
+  res_box.position(res_slider.x+res_slider.width+30,100);
+  res_box.value(res_slider.value());
+
+  n = createButton("Noise");
+  n.position(img.width+20,150)
+  noise_slider = createSlider(1,10,1);
+  noise_slider.position(n.x+n.width+20,150);
+  noise_slider.input(noise_changed);
+  noise_box = createInput();
+  noise_box.position(noise_slider.x+noise_slider.width+30,150);
+  noise_box.value(noise_slider.value()/100.0);
+
+  s = createButton("Seed");
+  s.position(img.width+20,200)
+  seed_slider = createSlider(1,100,1);
+  seed_slider.position(s.x+s.width+20,200);
+  seed_slider.input(seed_changed);
+  seed_box = createInput();
+  seed_box.position(seed_slider.x+seed_slider.width+30,200);
+  seed_box.value(seed_slider.value());
+
+  render_check = createCheckbox("Render",false);
+  render_check.position(img.width+20,250);
+
+
+
+  
+  
+}
+
+function changeHue(rgb, degree) {
+    var hsl = rgbToHSL(rgb);
+    hsl.h += degree;
+    if (hsl.h > 360) {
+        hsl.h -= 360;
+    }
+    else if (hsl.h < 0) {
+        hsl.h += 360;
+    }
+    return hslToRGB(hsl);
+}
+
+// exepcts a string and returns an object
+function rgbToHSL(rgb) {
+
+    var r = rgb[0] / 255,
+        g = rgb[1] / 255,
+        b = rgb[2] / 255,
+        cMax = Math.max(r, g, b),
+        cMin = Math.min(r, g, b),
+        delta = cMax - cMin,
+        l = (cMax + cMin) / 2,
+        h = 0,
+        s = 0;
+
+    if (delta == 0) {
+        h = 0;
+    }
+    else if (cMax == r) {
+        h = 60 * (((g - b) / delta) % 6);
+    }
+    else if (cMax == g) {
+        h = 60 * (((b - r) / delta) + 2);
+    }
+    else {
+        h = 60 * (((r - g) / delta) + 4);
+    }
+
+    if (delta == 0) {
+        s = 0;
+    }
+    else {
+        s = (delta/(1-Math.abs(2*l - 1)))
+    }
+
+    return {
+        h: h,
+        s: s,
+        l: l
+    }
+}
+
+// expects an object and returns a string
+function hslToRGB(hsl) {
+    var h = hsl.h,
+        s = hsl.s,
+        l = hsl.l,
+        c = (1 - Math.abs(2*l - 1)) * s,
+        x = c * ( 1 - Math.abs((h / 60 ) % 2 - 1 )),
+        m = l - c/ 2,
+        r, g, b;
+
+    if (h < 60) {
+        r = c;
+        g = x;
+        b = 0;
+    }
+    else if (h < 120) {
+        r = x;
+        g = c;
+        b = 0;
+    }
+    else if (h < 180) {
+        r = 0;
+        g = c;
+        b = x;
+    }
+    else if (h < 240) {
+        r = 0;
+        g = x;
+        b = c;
+    }
+    else if (h < 300) {
+        r = x;
+        g = 0;
+        b = c;
+    }
+    else {
+        r = c;
+        g = 0;
+        b = x;
+    }
+
+    r = normalize_rgb_value(r, m);
+    g = normalize_rgb_value(g, m);
+    b = normalize_rgb_value(b, m);
+
+    return [r,g,b,255];
+}
+
+function normalize_rgb_value(color, m) {
+    color = Math.floor((color + m) * 255);
+    if (color < 0) {
+        color = 0;
+    }
+    return color;
+}
+
+
+
+function start_draw() {
+
+  gameStarted = true;
+}
+
+function stop_draw() {
+
+  if(render_check.checked()){
+    gameStarted = true;
+  }
+  else{
+  gameStarted = false;
+  }
+}
+
+function max_count_changed() {
+
+max_count_box.value(max_count_slider.value()+50);
+
+}
+
+function res_changed() {
+
+res_box.value(res_slider.value());
+
+}
+
+function noise_changed() {
+
+noise_box.value(noise_slider.value()/100.0);
+
+}
+
+function seed_changed() {
+
+seed_box.value(seed_slider.value());
+noiseSeed(seed_slider.value());
+
+}
+
+
+function draw() {
+  if(gameStarted){
+   
+  if(draw_count === 0){
+    //cvn = createCanvas(img.width, img.height);
+    placeParticles();
+    background(img,0,0);
+    if(render_check.checked()){
+    cap.start();
+    }
+  }  
+  
+    if(render_check.checked()){
+    cap.capture(cvn.canvas);
+    }
+  //background(0,50);
+
+  if(draw_count  == max_count_slider.value() + 50){
+    noLoop();
+    if(render_check.checked()){
+    cap.stop();
+    cap.save();
+    }
+    
+  }
+
+  for(let i = 0; i < particles.length; i ++) {
+    particles[i].draw();
+  }
+  if (draw_count > max_count_slider.value()) {
+    console.log(particles[0].log);
+    
+    //noLoop(); 
+  }
+
+  if (draw_count > max_count_slider.value() - 20 ){
+    
+    if(!change_img_status){
+        change_img_status = true;
+        img.loadPixels();
+        for(let i =0; i < img.width; i++){
+            for(let j =0 ; j < img.height; j++){
+                let pix = img.get(i,j);
+                img.set(i,j,changeHue(pix,-180));
+            }
+            //img.pixels[i] = changeHue(img.pixels[i],-180);
+        }
+        img.updatePixels();        
+    }
+    //tint(100,1);
+    //background(img);
+    //colorMode(HSB,100);
+    tint(255,tint_count);
+    background(img);
+    tint_count = tint_count + 0.1 ;
+    console.log(tint_count);
+  }
+
+
+  draw_count ++;
+}
+else{
+
+  
+}
+}
+
+
+function placeParticles() {
+  for(let i = 0; i < width; i += res_slider.value()) {
+    for(let j = 0; j < height; j += res_slider.value()) {
+      let x = (i/width) * img.width;
+      let y = (j/height) * img.height;
+      let c = img.get(x, y);
+      //let c = color(r,g,b) 
+      
+      // if(c[3] != 0) {
+      if(c[0] + c[1] + c[2] != 255 * 3) {
+        let v = createVector(i, j);
+        particles.push(new Particle(i, j, c, v))
+      }
+      
+    }
+  }
+}
+
+class Particle {
+  constructor(x, y, c, v) {
+    this.x = x;
+    this.y = y;
+    
+    this.c = c;
+    
+    this.homeX = x;
+    this.homeY = y;
+
+    this.v = v;
+    this.log = [] ;
+  }
+  
+
+  draw() {
+
+    //stroke(this.c,50)
+    let p = this.v
+    //background(0,5);
+    //fill(0);
+    //point(p.x, p.y);
+    if (draw_count <= max_count_slider.value() / 2){
+      n = noise(p.x * noise_slider.value()/100.0, p.y * noise_slider.value()/100.0, frameCount * noise_slider.value()/100.0);
+      this.log.push(n)
+      let a = TAU * n;
+      p.y += sin(a);
+      p.x += cos(a);
+      stroke(this.c,50);
+      point(p.x, p.y); }
+    else{ 
+      n = this.log.pop();
+      let a = TAU * n;
+      p.x -= cos(a);
+      p.y -= sin(a);  
+      //colorMode(HSL);
+      //stroke([255-this.c[0],255-this.c[1],255-this.c[2],255],0);
+      stroke(changeHue(this.c,-180));
+      //console.log(this.c);
+      point(p.x, p.y); }
+    
+    if ( p.x < 0 ){
+      p.x = width;
+    }
+    if ( p.x > width ){
+      p.x = 0;
+    }
+    if(p.y<0){
+      p.y = height;
+    }
+    if(p.y>height){
+      p.y = 0;
+    }
+
+  }
+}
+
+
+        </script>
+    </main>
+  </body>
+</html>
