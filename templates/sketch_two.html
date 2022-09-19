@@ -303,7 +303,12 @@ function draw() {
     //background(img);
     //colorMode(HSB,100);
     tint(255,tint_count);
+
+    if(change_img_status){
+    background(img);}
+    else{
     background(img_t);
+    }
     tint_count = tint_count + 0.1 ;
     //console.log(tint_count);
   }
