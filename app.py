@@ -9,6 +9,9 @@ def index():
     index_count = len(jpg_files)   
     return render_template('index.html', index_count=index_count)
 
+@app.route('/sketch_all')
+def sketch_all():
+    return render_template('sketch_all.html')
 
 @app.route('/sketch<index>')
 def sketch(index):
