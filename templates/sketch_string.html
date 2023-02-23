@@ -19,7 +19,6 @@ var max_count = 1000;
 var res = 5;
 var noise_value = 0.01;
 var seed = 1;
-var setup_status = false;
 
 var DEFAULT_SIZE = 1000
 var WIDTH = window.innerWidth
@@ -91,7 +90,7 @@ class Random {
     return list[this.random_int(0, list.length - 1)];
   }
 }
-let tokenData = genTokenData(123);
+let tokenData = genTokenData(1);
 let R = new Random();
 
 
@@ -108,8 +107,8 @@ let R = new Random();
 //}
 
 function setup() {
-  createCanvas(1000, 1000)
-  img = createImage(1000, DEFAULT_SIZE)
+  createCanvas(1500, HEIGHT)
+  img = createImage(1500, DEFAULT_SIZE)
 }
 
 function changeHue(rgb, degree) {
@@ -234,6 +233,7 @@ function draw() {
     //cvn = createCanvas(img.width, img.height);
     placeParticles();
     console.log(particles.length)
+    noLoop();
   }  
 
   if(draw_count  == max_count + 50){
@@ -247,9 +247,6 @@ function draw() {
 
   //console.log(draw_count);
   //console.log(max_count);
-  for(let i = 0; i < particles.length; i ++) {
-    particles[i].draw();
-  }
   if (draw_count > max_count+50 ) {
     
     noLoop(); 
@@ -264,18 +261,125 @@ function draw() {
   draw_count ++;
 }
 
+function get_y_value(){
+  let x = R.random_int(10, 1000);
+  let offset = R.random_int(200, 1000);
+  //let x = 100;
+  let y = [];
+  for (let i = 0; i < 1000; i++) {
+      temp = i
+      //y_temp =temp**3 + 2*temp**2 + 3*temp + 4 
+      y_temp = Math.sin(Math.PI * (i/x));
+      y.push(int(y_temp*1000) +offset); 
+  }
+  return y
+}
+
+function add_blur(y_start){
+  let v = 1.0 / 999.0;
+  let offset = R.random_int(50,500);
+// kernel is the 3x3 matrix of normalized values
+let kernel = [[ v, v, v ], [ v, v, v ], [ v, v, v ]];
+
+
+  for (let x = 1; x < 1000; x++) {
+    for (let y = y_start[x]; y < y_start[x]+offset&&y<1501; y++) {
+      let sum = 0; 
+      for (kx = -1; kx <= 1; kx++) {
+        for (ky = -1; ky <= 1; ky++) {
+          let xpos = x + kx;
+          let ypos = y + ky;
+          
+          let val = img.get(ypos, xpos);
+          //console.log(val);
+
+          sum += kernel[kx+1][ky+1] * val;
+        }
+      }
+  
+  
+      // set the value of the edgeImg pixel to the kernel sum
+      //console.log(sum);
+      let val = img.get(y, x);
+      //img.set(y,x, color(changeHue([val[0],val[1],val[2]], offset/0.2)));
+      //img.set(x, y, color(255,255,255));
+    }
+  }
+}
 
 function placeParticles() {
 
+
+  let offset = R.random_int(50,500);
+  let line_size = R.random_int(1, 20);    
+  let split_list = R.random_int(2, 5);
+  let y_start = get_y_value();
+  console.log(y_start);
+  //let line_size = 7;
+  let r_start = 0;
+  let r_end = 0;
   for(let i=0;i<img.height;i++){
-    r = R.random_num(0,255);
-    g = R.random_num(100,255);
-    b = R.random_num(0,100);   
+  //r_start = R.random_num(200, 500);
+  //r_end = R.random_num(600, 1300);
+  let depth = R.random_int(0, 7);
+    //r = R.random_num(R.random_num(0,100),255);
+    //g = R.random_num(R.random_num(0,100),255);
+    //b = R.random_num(R.random_num(0,100),120);   
+    if (i % line_size == 0){
+      r = R.random_num(R.random_num(0,255),R.random_num(0,255));
+      g = R.random_num(R.random_num(0,255),R.random_num(0,255));
+      b = R.random_num(R.random_num(0,255),R.random_num(0,255));
+      r_start = R.random_num(200, 500);
+      r_end = R.random_num(600, 1300);
+    }   
     img.set(0, i, color(r,g,b));
     let v = createVector(0, i);
     particles.push(new Particle(0,i, color(r,g,b), v))
     for(let j=1;j<img.width;j++){
-      img.set(j, i, color(changeHue([r,g,b], j/3.0)));
+
+        if ( j >= y_start[i] && j <= y_start[i]+offset){
+
+          
+          //img.set(j, i, color(changeHue([r,g,b], j/3.0/40)));
+          //if(j< y_start[i]+10){
+          //img.set(j, i, color(changeHue([r,g,b], j/3.0)));
+          img.set(j, i, color(changeHue([r,g,b], offset/0.2)));
+          //img.set(j, i, color(255,255,255));
+        //}
+          //else if(j< y_start[i]+40){
+          //img.set(j, i, color(changeHue([r,g,b], j/3.0/40)));
+          //console.log(j/3.0)
+          //img.set(j, i, color(255,255,255));
+          //}
+          //else{
+
+          //img.set(j, i, color(changeHue([r,g,b], j/3.0)));
+          //img.set(j, i, color(0,0,0));
+          //img.set(j, i, color(changeHue([r,g,b], j/3.0/50)));
+          //}
+          //for(let k=10;k<40;k++){
+          //img.set(j, i, color(changeHue([r,g,b], j/3.0/k)));
+          //}
+          //if(j<y_start[i]+100 || j > y_start[i] +50 )
+          //{
+            //img.set(j, i, color(255,255,255));
+          //img.set(j, i, color(r,g,b));
+            //img.set(j, i, color(changeHue([r,g,b], 360)));
+          //console.log(j)
+          //}
+          //else{
+
+          //img.set(j, i, color(255,255,255));
+          //img.set(j, i, color(changeHue([r,g,b], 0.1)));
+          //}
+        }
+        else{
+
+          img.set(j, i, color(changeHue([r,g,b], j/3.0)));
+
+        }
+
+
       if (j % res == 0){
       let v = createVector(j, i);
       particles.push(new Particle(j, i, changeHue([r,g,b],j/3.0), v))
@@ -283,6 +387,8 @@ function placeParticles() {
     }
   }
   img.updatePixels();
+  //add_blur(y_start);
+  //img.updatePixels();
   //imageMode(CENTER);
   image(img,0,0);
 

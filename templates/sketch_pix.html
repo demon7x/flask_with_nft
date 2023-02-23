@@ -7,6 +7,7 @@
     <main>
         <script>
 var img;
+var ch_img;
 let particles = [];
 let fps;
 let draw_count = 0;
@@ -19,7 +20,6 @@ var max_count = 1000;
 var res = 5;
 var noise_value = 0.01;
 var seed = 1;
-var setup_status = false;
 
 var DEFAULT_SIZE = 1000
 var WIDTH = window.innerWidth
@@ -91,7 +91,7 @@ class Random {
     return list[this.random_int(0, list.length - 1)];
   }
 }
-let tokenData = genTokenData(123);
+let tokenData = genTokenData(1);
 let R = new Random();
 
 
@@ -108,8 +108,8 @@ let R = new Random();
 //}
 
 function setup() {
-  createCanvas(1000, 1000)
-  img = createImage(1000, DEFAULT_SIZE)
+  createCanvas(1600, DEFAULT_SIZE)
+  img = createImage(1600, DEFAULT_SIZE)
 }
 
 function changeHue(rgb, degree) {
@@ -124,6 +124,29 @@ function changeHue(rgb, degree) {
     return hslToRGB(hsl);
 }
 
+function changeS(rgb, degree) {
+    var hsl = rgbToHSL(rgb);
+    hsl.h += degree;
+    if (hsl.h > 360) {
+        hsl.h -= 360;
+    }
+    else if (hsl.h < 0) {
+        hsl.h += 360;
+    }
+    return hslToRGB(hsl);
+}
+
+function change_HSL_light(rgb, degree) {
+    var hsl = rgbToHSL(rgb);
+    hsl.l += degree;
+    if (hsl.l > 360) {
+        hsl.l -= 360;
+    }
+    else if (hsl.l < 0) {
+        hsl.l += 360;
+    }
+    return hslToRGB(hsl);
+}
 // exepcts a string and returns an object
 function rgbToHSL(rgb) {
 
@@ -224,7 +247,7 @@ function normalize_rgb_value(color, m) {
 
 function draw() {
 
-
+  if(gameStarted){
 
 
 
@@ -234,9 +257,10 @@ function draw() {
     //cvn = createCanvas(img.width, img.height);
     placeParticles();
     console.log(particles.length)
+    gameStarted = false;
   }  
 
-  if(draw_count  == max_count + 50){
+  if(draw_count  == max_count + 200){
     //noLoop();
     //change_img_status = !change_img_status;
     //draw_count = -1;
@@ -244,47 +268,136 @@ function draw() {
     //background(img,0,0);
     
   }
+  if (draw_count > max_count - 20 ){
 
-  //console.log(draw_count);
-  //console.log(max_count);
+    tint(255,tint_count);
+
+    background(img);
+    tint_count = tint_count + 0.1 ;
+
+  }
+
   for(let i = 0; i < particles.length; i ++) {
     particles[i].draw();
   }
-  if (draw_count > max_count+50 ) {
+  //console.log(draw_count);
+  //console.log(max_count);
+  if (draw_count > max_count+100 ) {
     
     noLoop(); 
   }
 
-  if (draw_count > max_count - 20 ){
-      tint(255,tint_count);
-      image(img,0,0);
-      tint_count = tint_count + 0.1 ;    
 
-  }
   draw_count ++;
 }
+}
 
+function get_y_value(){
+  let x = R.random_int(10, 1000);
+  let offset = R.random_int(200, 1000);
+  //let x = 100;
+  let y = [];
+  for (let i = 0; i < 1000; i++) {
+      temp = i
+      //y_temp =temp**3 + 2*temp**2 + 3*temp + 4 
+      y_temp = Math.sin(Math.PI * (i/x));
+      y.push(int(y_temp*1000) +offset); 
+  }
+  return y
+}
+
+function add_blur(y_start){
+  let v = 1.0 / 999.0;
+  let offset = R.random_int(50,500);
+// kernel is the 3x3 matrix of normalized values
+let kernel = [[ v, v, v ], [ v, v, v ], [ v, v, v ]];
+
+
+  for (let x = 1; x < 1000; x++) {
+    for (let y = y_start[x]; y < y_start[x]+offset&&y<1501; y++) {
+      let sum = 0; 
+      for (kx = -1; kx <= 1; kx++) {
+        for (ky = -1; ky <= 1; ky++) {
+          let xpos = x + kx;
+          let ypos = y + ky;
+          
+          let val = img.get(ypos, xpos);
+          //console.log(val);
+
+          sum += kernel[kx+1][ky+1] * val;
+        }
+      }
+  
+  
+      // set the value of the edgeImg pixel to the kernel sum
+      //console.log(sum);
+      let val = img.get(y, x);
+      //img.set(y,x, color(changeHue([val[0],val[1],val[2]], offset/0.2)));
+      //img.set(x, y, color(255,255,255));
+    }
+  }
+}
+
+function get_matrix_position_list(start_row,start_col,value){
+  let matrix_position_list = [];
+  r = R.random_num(R.random_num(0,255),R.random_num(0,255));
+  g = R.random_num(R.random_num(0,255),R.random_num(0,255));
+  b = R.random_num(R.random_num(0,255),R.random_num(0,255));
+  for (let i = start_row; i < start_row+value; i++) {
+    for (let j = start_col; j < start_col+value; j++) {
+        img.set(j, i, color(r,g,b));
+    }
+  }
+  return color(r,g,b)
+}
+
+function keyPressed() {
+  if (keyCode == 68) {
+    gameStarted = !gameStarted;
+  }
+}
 
 function placeParticles() {
 
-  for(let i=0;i<img.height;i++){
-    r = R.random_num(0,255);
-    g = R.random_num(100,255);
-    b = R.random_num(0,100);   
-    img.set(0, i, color(r,g,b));
-    let v = createVector(0, i);
-    particles.push(new Particle(0,i, color(r,g,b), v))
-    for(let j=1;j<img.width;j++){
-      img.set(j, i, color(changeHue([r,g,b], j/3.0)));
-      if (j % res == 0){
-      let v = createVector(j, i);
-      particles.push(new Particle(j, i, changeHue([r,g,b],j/3.0), v))
-      }
+
+  let offset = R.random_int(1,50);
+  let pix_size = R.random_choice([5,8,10,20,25,50,40,100,200]);  
+  let split_list = R.random_int(2, 5);
+  let y_start = get_y_value();
+  console.log(y_start);
+  //let line_size = 7;
+  let r_start = 0;
+  let r_end = 0;  
+  //pixelDensity(0.1);
+
+  
+   
+
+  for(let i=0;i<img.height;i+=pix_size){
+    for(let j=0;j<img.width;j+=pix_size){
+      
+      
+      c=get_matrix_position_list(i,j,pix_size);
+
+      
     }
   }
+
   img.updatePixels();
+  for(let i=0;i<img.height;i++){
+    for(let j=0;j<img.width;j++){
+      if (j % res == 0){
+      let v = createVector(j, i);
+      let c = img.get(j,i);
+      particles.push(new Particle(j, i, c,v))
+
+}}}
+ //img.updatePixels();
+  //add_blur(y_start);
+  //img.updatePixels();
   //imageMode(CENTER);
   image(img,0,0);
+  //ch_img = copy(img)
 
 }
 
@@ -325,7 +438,7 @@ class Particle {
       p.y -= sin(a);  
       //colorMode(HSL);
       //stroke([255-this.c[0],255-this.c[1],255-this.c[2],255],0);
-      //stroke(changeHue(this.c,55));
+      //stroke(changeHue(this.c,-180));
       stroke(this.c,50);
       //console.log(this.c);
       point(p.x, p.y); }

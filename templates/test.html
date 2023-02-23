@@ -1,0 +1,546 @@
+  }</style></head><body><canvas id="babylon-canvas"></canvas><script>let canvas=document.getElementById("babylon-canvas")canvas.style.outline="none"var engine=new BABYLON.Engine(canvas,!1)let scene=new BABYLON.Scene(engine),projectNumber=Math.floor(parseInt(tokenData.tokenId)/1e6),mintNumber=parseInt(tokenData.tokenId)%1e6class Random{constructor(){this.useA=!1let e=function(e){let t=parseInt(e.substr(0,8),16),n=parseInt(e.substr(8,8),16),r=parseInt(e.substr(16,8),16),i=parseInt(e.substr(24,8),16)return function(){t|=0,n|=0,r|=0,i|=0let e=(t+n|0)+i|0return i=i+1|0,t=n^n>>>9,n=r+(r<<3)|0,r=r<<21|r>>>11,r=r+e|0,(e>>>0)/4294967296}}this.prngA=new e(tokenData.hash.substr(2,32)),this.prngB=new e(tokenData.hash.substr(34,32))for(let e=0e<1e6e+=2)this.prngA(),this.prngB()}random_dec(){return this.useA=!this.useA,this.useA?this.prngA():this.prngB()}random_num(e,t){return e+(t-e)*this.random_dec()}random_int(e,t){return Math.floor(this.random_num(e,t+1))}random_bool(e){return this.random_dec()<e}random_choice(e){return e[this.random_int(0,e.length-1)]}}let rand=new Randomvar dToR=Math.PI/180,twopi=2*Math.PI,MaC=e=>Math.cos(e),MaS=e=>Math.sin(e),UV2="uniform vec2",UV3="uniform vec3",UF="uniform float",VV3P="varying V3 vPosition",VV3N="varying V3 vNormal",VV2T="varying V2 vUV",US2="uniform sampler2D"getDayOfYear=e=>{var t=new Date(e.getUTCFullYear(),e.getUTCMonth(),e.getUTCDate()),n=new Date(t.getFullYear(),0,0),r=t.getTime()-n.getTime()return Math.floor(r/864e5)+1}var BA=BABYLON,nv3=(e,t,n)=>new BA.Vector3(e,t,n),nv2=(e,t)=>new BA.Vector2(e,t),nv21=e=>new BA.Vector2(e,e),addFS=(e,t)=>BA.Effect.ShadersStore[t+"FragmentShader"]=commonShaderSrc+e,addVS=(e,t)=>BA.Effect.ShadersStore[t+"VertexShader"]=commonShaderSrc+eclass Timer{constructor(){this.startDate=new Date,this.tchange=3600*rand.random_dec()}update(){var e=new Date,t=e.getTime()-this.startDate.getTime()if(t>108e6)return this.runtime=0,void(this.startDate=e)var n=t/1e3this.runtime=n+this.tchange}}let timer=new Timerclass Sun{constructor(e){let t=rdG(e)this.longitude=t.x,this.latitude=t.y}calc(e){let t=e.getUTCHours()+e.getUTCMinutes()/60+e.getUTCSeconds()/3600+e.getUTCMilliseconds()/36e5,n=e.getUTCFullYear()-1949,r=32916.5+365*n+n/4+getDayOfYear(e)+t/24-51545,i=280.46+.9856474*ri%=360,i<0&&(i+=360)let s=357.528+.9856003*rs%=360,s<0&&(s+=360),s*=dToRlet a=i+1.915*MaS(s)+.02*MaS(2*s)a%=360,a<0&&(a+=360)let o=23.439-4e-7*ra*=dToR,o*=dToRlet l=MaC(o)*MaS(a),c=MaC(a),h=Math.atan(l/c)c<0&&(h+=Math.PI),c>=0&&l<0&&(h+=twopi)let A=Math.asin(MaS(o)*MaS(a)),m=6.697375+.0657098242*r+tm%=24,m<0&&(m+=24)let d=m+this.longitude/15d%=24,d<0&&(d+=24),d=15*d*dToRlet u=d-hu<-Math.PI&&(u+=twopi),u>Math.PI&&(u-=twopi)let x=this.latitude*dToR,p=Math.asin(MaS(A)*MaS(x)+MaC(A)*MaC(x)*MaC(u)),f=Math.asin(-MaC(A)*MaS(u)/MaC(p))return 0<MaS(A)-MaS(p)*MaS(x)?MaS(f)<0&&(f+=twopi):f=Math.PI-f,{x:f,y:p}}getDir(e){let t=this.calc(e),n=t.y,r=t.x+Math.PIreturn{z:MaC(n)*MaC(r),y:-MaS(n),x:MaC(n)*MaS(r)}}}var BV2=BA.Vector2class Line2D{constructor(e,t){this.S=nv2(e.x,e.y),this.E=nv2(t.x,t.y)}Dir(){return nv2(this.E.x-this.S.x,this.E.y-this.S.y)}DirOrNor(){var e=BV2.Normalize(this.Dir())return nv2(e.y,-e.x)}UnDis(e){let t=this.Dir(),n=this.DirOrNor(),r=nv2(this.S.x-e.x,this.S.y-e.y),i=n.x,s=-t.x,a=n.y,o=-t.y,l=0,c=0,h=i*o-s*a,A=Math.min(BV2.Distance(e,this.S),BV2.Distance(e,this.E))if(Math.abs(h)<1e-9)return Aif(c=(o*r.x-s*r.y)/h,l=(-a*r.x+i*r.y)/h,0<=l&&l<=1){let t=BV2.Lerp(this.S,this.E,l)return BV2.Distance(t,e)}return A}}var LinInt=(e,t)=>{let n=e.Dir(),r=t.Dir(),i=e.S.x-t.S.x,s=e.S.y-t.S.y,a=r.x,o=-n.x,l=r.y,c=-n.y,h=0,A=0,m=a*c-o*lreturn!(Math.abs(m)<1e-9)&&(A=(c*i-o*s)/m,h=(-l*i+a*s)/m,0<=h&&h<=1&&0<=A&&A<=1)},tw={ci:78,coc:1,snf:[0,0,0]},commonShaderSrc="
+precision highp float
+#define tx2D texture
+#define gl_FC gl_FragColor
+#define V2 vec2
+#define V3 vec3
+#define V4 vec4
+#define FL float
+#define INVSQ inversesqrt
+float PI=3.1459
+vec3 nrZ(vec3 v){ return normalize(v)}
+vec2 nrZ(vec2 v){ return normalize(v)}
+vec2 IntC2(vec2 x){ return x*x*x*(x*(x*6.-15.)+10.) }
+vec3 IntC2(vec3 x){ return x*x*x*(x*(x*6.-15.)+10.) }
+float mC4=0.49999
+void hash_3D(vec3 grc,out vec4 lowz_hash_0,out vec4 lowz_hash_1,out vec4 lowz_hash_2,out vec4 highz_hash_0,
+out vec4 highz_hash_1,out vec4 highz_hash_2	){
+vec2 OFFSET=vec2(50.,161.)
+vec3 S_L_Fs=vec3(635.298681,682.357502,668.926525)
+vec3 ZINC=vec3(48.500388,65.294118,63.934599)
+grc.xyz=grc.xyz-floor(grc.xyz*(1./69.))*69.
+vec3 grc_1=step(grc,vec3(69.-1.5))*(grc+1.)
+vec4 P=vec4(grc.xy,grc_1.xy)+OFFSET.xyxy
+P*=P
+P=P.xzxz*P.yyww
+vec3 lowz_mod=vec3(1./(S_L_Fs.xyz+ZINC.xyz*grc.z))
+vec3 highz_mod=vec3(1./(S_L_Fs.xyz+ZINC.xyz*grc_1.z))
+lowz_hash_0=fract(P*lowz_mod.x)
+highz_hash_0=fract(P*highz_mod.x)
+lowz_hash_1=fract(P*lowz_mod.y)
+highz_hash_1=fract(P*highz_mod.y)
+lowz_hash_2=fract(P*lowz_mod.z)
+highz_hash_2=fract(P*highz_mod.z)}
+void hash_2D(vec2 grc,out vec4 hash_0,out vec4 hash_1){
+vec2 OFFSET=vec2(26.,161.)
+vec2 S_L_Fs=vec2(642.949883,951.135664)
+vec4 P=vec4(grc.xy,grc.xy+1.)
+P=P-floor(P*(1./71.))*71.
+P+=OFFSET.xyxy
+P*=P
+P=P.xzxz*P.yyww
+hash_0=fract(P*(1./S_L_Fs.x))
+hash_1=fract(P*(1./S_L_Fs.y))}
+float Perlin2D(vec2 P){
+vec2 Pi=floor(P)
+vec4 Pf_Pfmin1=P.xyxy-vec4(Pi,Pi+1.)
+vec4 hx,hy
+hash_2D(Pi,hx,hy)
+vec4 gr_x=hx-mC4
+vec4 gr_y=hy-mC4
+vec4 gr_r=INVSQ(gr_x*gr_x+gr_y*gr_y)*(gr_x*Pf_Pfmin1.xzxz+gr_y*Pf_Pfmin1.yyww)
+gr_r*=INVSQ(0.5)
+vec2 bl=IntC2(Pf_Pfmin1.xy)
+vec4 bl2=vec4(bl,vec2(1.-bl))
+return dot(gr_r,bl2.zxzx*bl2.wwyy)}
+float Perlin3D(vec3 P){
+vec3 Pi=floor(P)
+vec3 Pf=P-Pi
+vec3 Pf_min1=Pf-1.0
+vec4 hx0,hy0,hz0,hx1,hy1,hz1
+hash_3D(Pi,hx0,hy0,hz0,hx1,hy1,hz1)
+vec4 gx0=hx0-mC4
+vec4 gy0=hy0-mC4
+vec4 gz0=hz0-mC4
+vec4 gx1=hx1-mC4
+vec4 gy1=hy1-mC4
+vec4 gz1=hz1-mC4
+vec4 gr_0=INVSQ(gx0*gx0+gy0*gy0+gz0*gz0)*(vec2(Pf.x,Pf_min1.x).xyxy*gx0+vec2(Pf.y,Pf_min1.y).xxyy*gy0+Pf.zzzz*gz0)
+vec4 gr_1=INVSQ(gx1*gx1+gy1*gy1+gz1*gz1)*(vec2(Pf.x,Pf_min1.x).xyxy*gx1+vec2(Pf.y,Pf_min1.y).xxyy*gy1+Pf_min1.zzzz*gz1)
+vec3 bl=IntC2(Pf)
+vec4 res0=mix(gr_0,gr_1,bl.z)
+vec4 bl2=vec4(bl.xy,vec2(1.0-bl.xy))
+return dot(res0,bl2.zxzx*bl2.wwyy)*INVSQ(0.75)}
+float gain(float x,float k){
+float a=0.5*pow(2.0*((x<0.5)?x:1.0-x),k)
+return(x<0.5)?a:1.0-a}
+float remap(float x,float from_lower,float from_upper){
+float w=clamp((x-from_lower)/(from_upper-from_lower),0.,1.)
+return w}
+float sat(float v){
+return clamp(v,0.,1.)}
+float fbm(vec3 p,int N_OCT,bool t1){
+float ret=0.
+float sum=0.
+float freq=1.
+float amp=1.
+for(int i=0i<N_OCTi++){
+vec3 fs=vec3(freq,freq,t1?1. : freq)
+float n=(Perlin3D(p*fs)+1.)*0.5*amp
+ret+=n
+sum+=amp
+freq*=2.1
+amp*=0.55}
+return ret/sum}
+float fbm(vec2 p,int N_OCT){
+float ret=0.
+float sum=0.
+float freq=1.
+float amp=1.
+for(int i=0i<N_OCTi++){
+float n=(Perlin2D(p*vec2(freq))+1.)*0.5*amp
+ret+=n
+sum+=amp
+freq*=2.1
+amp*=0.55}
+return ret/sum}
+float fbm(vec2 p){
+return fbm(p,10)}
+vec4 sampleSeamless(sampler2D s,vec2 uv){
+#define S_T texture(s,fract(tm))
+vec4 res
+vec4 s_0
+vec4 s_1
+vec4 s_2
+vec4 s_3
+vec2 tm
+vec2 texc=fract(uv)
+tm=vec2(0.5)+texc*0.5
+s_0=S_T*((1.0-texc.x)*(1.0-texc.y))
+tm=vec2(0.0,0.5)+texc*0.5
+s_1=S_T*(texc.x*(1.-texc.y))
+tm=vec2(0.5,0.0)+texc*0.5
+s_2=S_T*((1.-texc.x)*texc.y)
+tm=vec2(0.)+texc*0.5
+s_3=S_T*(texc.x*texc.y)
+res=(s_0+s_1+s_2+s_3)/4.
+return res}
+vec3 desat(vec3 c,float s){return max((1.-s)*c+(0.33*s)*(c.x+c.y+c.z),vec3(0.))}
+float sqr(float x){return x*x}
+",sampleSkySrc=`
+uniform samplerCube envCubemapSampler
+${UF} cms
+vec4 sampleRefl(vec3 dir){
+vec3 s=textureCube(envCubemapSampler,dir).xyz
+return vec4(s,1.)}
+vec3 getSkyNoise(vec3 dir){
+return textureCube(envCubemapSampler,dir).www}
+`,intOCSSrc=`
+${UF} oilCons
+float op_mi=0.09
+float op_md=0.53
+float intOCs(float low,float mid,float high){
+float v=oilCons
+if(v<op_mi){
+return low}
+if(v<op_md){
+return mid}
+return high}
+float intOCs(float min_0,float max_0,float min_1,float max_1,float min_2,float max_2){
+float v=oilCons
+if(v<op_mi){
+return mix(min_0,max_0,remap(v,0.,op_mi))}
+if(v<op_md){
+return mix(min_1,max_1,remap(v,op_mi,op_md))}
+return mix(min_2,max_2,remap(v,op_md,1.))}
+`,skyFSrc=`
+varying V3 direction
+FL cloudy=0.2
+const FL R0=6360e3
+FL cc=.1193662
+V3 C=V3(0.,-R0,0.)
+${UV3} sunD
+${UF} time
+${UV3} nfreq
+${UF} ppp
+V2 dens(V3 pos){
+FL Hr=8e3
+FL Hm=1.2e3
+FL h=length(pos-C)-R0
+FL R=exp(-h/Hr)
+FL cld=0.
+FL minCH=5e3
+if((minCH<h)&&(h<8e3)){
+V3 cp=pos+V3(150.*time,0.,5.*time)
+cld=fbm(cp*5e-5,6,false)+cloudy*0.1
+cld*=remap(cp.y,0.,10.)
+cld=smoothstep(.4+.04,.6+.04,cld)
+cld*=cld*25.*sqr(cloudy)*sin(PI*(h-minCH)/minCH)}
+return V2(R,exp(-h/Hm)+cld)}
+FL run(V3 p,V3 d){
+FL RR=6380e3*6380e3 
+V3 v=p-C
+FL b=dot(v,d)
+FL det2=RR+b*b-dot(v,v)
+if(det2<0.)return-1.
+FL dd=sqrt(det2)
+FL t1=-b-dd,t2=-b+dd
+return(t1>=0.)?t1 : t2}
+V3 calc(V3 po,V3 vD,out V3 scat,FL wSun){
+V3 bM=V3(10e-6)
+V3 bR=V3(8.8e-6,13.5e-6,33.1e-6)
+FL L=run(po,vD)
+V2 depthRM=V2(0.)
+int steps_v=16
+int steps_s=16
+FL dl=L/float(steps_v)
+V3 p=po
+V3 R=V3(0.),M=V3(0.)
+for(int i=0 i<steps_v i++){
+V2 dRM=dens(p)*dl
+depthRM+=dRM
+FL Ls=run(p,-sunD)
+if(Ls>0.){
+FL dls=Ls/float(steps_s)
+V2 depthRMs=V2(0.)
+V3 ps=p
+for(int j=0 j<steps_s j++){
+V2 dRMs=dens(ps)*dls
+depthRMs+=dRMs
+ps-=sunD*dls}
+V3 A=exp(-(bR*(depthRMs.x+depthRM.x)+bM*(depthRMs.y+depthRM.y)))
+R+=A*dRM.x
+M+=A*dRM.y}
+p+=vD*dl}
+FL s=0.98
+FL g=0.45
+FL g2=g*g
+FL mu=max(dot(vD,-sunD),0.8)
+FL muu=1.+mu*mu
+FL phaseR=.0596831*muu
+FL phaseM=cc*(1.-g2)*muu/((2.+g2)*pow(1.+g2-2.*g*mu,1.5))
+FL phaseS=cc*(1.-s)*muu/((2.+s)*pow(1.+s-2.*s*mu,1.5))
+V3 col=(M*bM)*((10.*phaseM)+(5.*phaseS*wSun))+(R*bR)*(10.*phaseR)
+scat=bM*depthRM.y
+return col}
+void main(void){
+V3 viewDir=direction
+FL camh=50.
+V3 pos=V3(0.,camh,0.)
+V3 viewDirN=nrZ(viewDir)
+FL darkGround=1.-remap(viewDirN.y,-0.5,-0.01)
+FL wSunU=remap(-sunD.y,-0.01,0.01)
+FL wNightBlue=1.-remap(-sunD.y,-0.05,0.3)
+FL wNightRed=min(1.-remap(-sunD.y,0.1,0.25),remap(-sunD.y,-0.2,0.1))
+FL whiteadd=remap(-sunD.y,-0.5,0.1)
+FL thresh=(camh/2.5e5)
+viewDirN.y=max(viewDirN.y,-thresh)
+viewDirN=nrZ(viewDirN)
+V3 scat
+V3 col=calc(pos,viewDirN,scat,wSunU)
+col.b*=1.15
+col.g*=1.035
+col=desat(col,-0.5)
+scat=(V3(1.)+scat)*0.1
+col+=scat*(mix(V3(0.,0.,0.),V3(2.5,1.75,0.),wNightRed)
++mix(V3(0.,0.,0.),V3(3.0,3.5,6.)*0.75,wNightBlue))
+col*=max(wSunU,1.-darkGround)
+col+=whiteadd*0.7
+FL pp=sat(fbm(direction*nfreq+V3(0.05)*time,6,false))
+FL aa=1.0
+if(pp<ppp){
+aa*=pow(remap(pp,0.,ppp),2.)}
+if(pp>1.-ppp){
+aa*=1.+remap(pp,1.-ppp,1.)*2.}
+gl_FC=V4(col,aa)}
+`const skyVSrc=`
+attribute V2 position
+varying V3 direction
+${UV3} ds[3]
+#define CUSTOM_VERTEX_DEFINITIONS
+void main(){
+#define CUSTOM_VERTEX_MAIN_BEGIN
+mat3 view=mat3(ds[0],ds[1],ds[2])
+direction=view*V3(position,1.)
+gl_Position=V4(position,0.,1.)
+#define CUSTOM_VERTEX_MAIN_END
+}
+`class SkydomeGenerator{constructor(){this._efRen=new BA.EffectRenderer(engine),this._efWrp=this._createEf(),this._rtCm=this._createRT(),this.texture=new BA.CubeTexture(null,scene),this.texture.name="SkyGen",this.texture._texture=this._rtCm.texture,this.texture.gammaSpace=!0,this.texture.updateSamplingMode(12),this.isInitialised=!1,this.face=0,this.ppp=.4}_createRT(){let e=engine.createRenderTargetCubeTexture(256,{format:5,type:2,generateMipMaps:!1,generateDepthBuffer:!1,samplingMode:2})return engine.updateTextureWrappingMode(e.texture,0,0,0),engine.updateTextureSamplingMode(3,e.texture,!0),e}_createEf(){let e="skyGen"return addVS(skyVSrc,e),addFS(skyFSrc,e),new BA.EffectWrapper({engine:engine,name:e,vertexShader:e,fragmentShader:e,uniformNames:["sunD","ds","time","nfreq","ppp"],useShaderStore:!0})}run(e,t){if(!this._efWrp.effect.isReady())returnlet n=this._efWrp.effectthis._efRen.setViewport(),this._efRen.applyEffectWrapper(this._efWrp),0==this.face&&(this.sud=e,this.time=t)let r=[[0,0,-1,0,-1,0,1,0,0],[0,0,1,0,-1,0,-1,0,0],[1,0,0,0,0,1,0,1,0],[1,0,0,0,0,-1,0,-1,0],[1,0,0,0,-1,0,0,0,1],[-1,0,0,0,-1,0,0,0,-1]]n.setVector3("sunD",nv3(this.sud.x,this.sud.y,this.sud.z)),n.setFloat("time",this.time),n.setFloat("ppp",this.ppp),n.setVector3("nfreq",nv3(tw.snf[0],tw.snf[1],tw.snf[2]))for(let e=0e<(this.isInitialised?1:6)e++)n.setArray3("ds",r[this.face]),engine.bindFramebuffer(this._rtCm,this.face,void 0,void 0,!0,0),this._efRen.applyEffectWrapper(this._efWrp),this._efRen.draw(),this.face++this._efRen.restoreStates(),engine.restoreDefaultFramebuffer(),6==this.face&&(this.face=0,this.isInitialised=!0)}}class FSShader{constructor(e,t,n,r,i,s=[],a=0){this.screenAligneQuad=BA.MeshBuilder.CreateGround(n+"saq",{width:1,height:1}),this.screenAligneQuad.position.y=-2e5,addVS(`
+precision highp float
+attribute V2 uv
+${VV2T}
+void main(){
+vUV=uv
+gl_Position=V4((uv.x-0.5)*2.,(uv.y-0.5)*2.,-0.001,1.)}
+`,n),addFS(r,n),this.shadMat=new BA.ShaderMaterial(n+"_mat",scene,n,{attributes:["uv"],uniforms:["invRes","time"],samplers:["src"],defines:s}),this.renderTarget=new BA.RenderTargetTexture(n+"_rt",e,scene,!1,!0,t,!1,2,!1,!1,!1,a),this.renderTarget.renderList.push(this.screenAligneQuad),scene.customRenderTargets.push(this.renderTarget),this.shadMat.setFloat("invRes",1/e),this.renderTarget.setMaterialForRendering(this.screenAligneQuad,this.shadMat),scene.registerBeforeRender((()=>{this.shadMat.setFloat("time",timer.runtime*i)}))}}var thickFSrc=`
+FL fbm(V3 p){
+return fbm(p,10,true)}
+V2 diss(V2 p,FL t){
+V2 r=V2(fbm(V3(4.*p+V2(1.7,9.2),t)),
+fbm(V3(4.*p+V2(8.3,2.8),t)))
+r.x=gain(r.x,5.)
+r.y=gain(r.y,5.)
+return r}
+${US2} src
+${VV2T}
+${UF} time
+void main(void){
+V2 duv=(diss(vUV*4.48,time*0.15)-V2(0.5))*0.015
+FL th=tx2D(src,vUV+duv*V2(2.,1.)).x
+FL outer=1.-remap(th,0.,8.)
+FL inner=1.-remap(th,-15.,0.)
+FL top=intOCs(2.51,1.2,1.5)
+outer=pow(outer,top)
+FL tip=intOCs(0.5,0.5,0.6)
+inner=pow(inner,tip)
+FL ov=(outer+inner)*0.5
+gl_FC=V4(ov)}
+`,mkSeles=`
+${VV2T}
+${US2} src
+void main(){
+V4 s=sampleSeamless(src,vUV)
+gl_FC=V4(s.xyz,1.)}
+`class MakeSeamless extends FSShader{constructor(e){super(512,2,"mkSeles",mkSeles,1,[],7),this.shadMat.setTexture("src",e)}}class ThicknessGenerator extends FSShader{constructor(e){super(1024,2,"thick",intOCSSrc+thickFSrc,1.5,[],6),this.shadMat.setTexture("src",e),this.shadMat.setFloat("oilCons",tw.coc)}}var oceanFragShaderNewSrc=`
+${VV2T}
+${UF} time
+FL fbm(V3 p){
+return fbm(p,4,false)}
+FL pattern2D(V2 p,FL t){
+V2 q=V2(fbm(V3(p,t)),fbm(V3(p+V2(5.2,1.3),t)))
+V2 r=V2(fbm(V3(p+4.*q+V2(1.7,9.2),t)),
+fbm(V3(p+4.*q+V2(8.3,2.8),t)))
+return fbm(p+4.*r)}
+void main(void){
+FL w=pattern2D(vUV*1.25,time)
+gl_FC=V4(w,w,w,1.)}
+`class WaterHeightGenerator extends FSShader{constructor(){super(1024,2,"wath",oceanFragShaderNewSrc,.03,[],6)}}var sobelfs=`
+${VV2T}
+${US2} src
+${UF} invRes
+FL rdX(V2 uv,FL s){
+uv.x+=s*invRes
+FL ret=tx2D(src,uv).x*2.
+ret+=tx2D(src,uv+V2(0.,invRes)).x
+ret+=tx2D(src,uv+V2(0.,-invRes)).x
+return ret}
+FL rdY(V2 uv,FL s){
+uv.y+=s*invRes
+FL ret=tx2D(src,uv).x*2.
+ret+=tx2D(src,uv+V2(invRes,0.)).x
+ret+=tx2D(src,uv+V2(-invRes,0.)).x
+return ret}
+void main(){
+FL h=tx2D(src,vUV).x
+FL dx=(rdX(vUV,1.)-rdX(vUV,-1.))*20.
+FL dy=(rdY(vUV,1.)-rdY(vUV,-1.))*20.
+gl_FC=V4(dx,dy,h,1.)}
+`class NormalFromHeight extends FSShader{constructor(e){super(1024,2,"nrm",sobelfs,1,[],7),e.wrapU=0,e.wrapV=0,this.shadMat.setTexture("src",e)}}let cl=[["pAyKTs0tbAiwgrUGHSkMW5SylKw+tIYzmM5EdVUvpIrFTRl0m8pMf5X4"],["KBkNhjiw7D057Lh3TErKV6NROJk6tKn/J0RH"],["cBEVigtucEoAVSL2oGQ54RyMoAKNhHGBPx"],["jB6RRgAxrNkANI25FSTu2S5HM7kIeKZQLvKziUJJ"],["0AdWWiec8BcR4vgBTNP0IwRPeONwORNOawQ4jX5AgRTET2DK","ZA8CARswQClwpLQu7x"],["yAFIAV2mKW4cg155zJRSoDoKJ8","7BhIIeYUx7dIkO4IiN"],["zACLoVKS1Gcho1s6MPHrP4HYkFR2QBcOl4b7bEP6TRZNwC5BZ+oC","aB9EQdUOqwywmk"],["dBzP6nEw3AAgo0q4RRTyT4KOKMdpV6QLUEONwMOxXLN0fJf7jOd73S","YAXBAnApl12t"],["oAnNg65RQT8aUvULgNOUeukt2Yo7oKkDOIfFOKI6FKNoQRT2i6dBOIGQ63tOS5UG","tA1DksoPV9g+2RdN","LALBorYR5xOo","UANB8v0Q40dx","wAhCYjIW3Cnm"],["8AnM6iSzkM59tNJPbzXIuDzFNKfwZCPGULlRk6LCKKNmK8oMTJ"],["VBmV3oJwIE0Wkxa3I5Y1nSR6PY52RSRNG0owJXQ3J+VHM6HPcLSm","MBXIwLcbW4Q34OpX3F","ZAGB0L4o3w6X"],["mAqFQSCqNWIa8r54jLKYcF","oANCQUIo3Aka","lAeFsgkl51MV","ICHKIbgi44ae","WBcHYj8d40Vd","VB2EEq0Xk89U","GBTD4xEV37xd","HBaEkzAO3s7NgZ","bBTFUpUh4oji","ZB5LMRAp5zQZYD","8ADGkKc0S533","yB7FsRI215qK4j"],["PBUU/ofqOSUZUtHyG+QHh3Js65ENZsNrQG","rB2FsqgUqtmC4b","1A7CcYUs1vqR0Q","kA8BIp8Vn+6b","pA0BwpYQ0z1u","WAcBErASgrd07t","xAoDcZEw4Dbl"],["9AGSEwfpTAkQ41j8YK5zSTYGVxVoENjMa/QIZVcCOuP2mLdQi+O4QOMKdnKR","aAiCMjMW5scqU2","WArBwlYX4zWr","bAXBgjIXsE5Y"],["tBWPaVPlIQWHZN4Fw6iAtPxFKNo6pJ5E"],["/AdP5kj1FG48aN45JOKJfsMQX04OnCk5KUH1OQn2kO13"],["LBcMxgV0TXi7l0gI4EfObxfHbNT8Z2VPvKYJVoPLRNZxJIO3ULQulP"],["vAeSOQ5mTXUUsL5P0ADBJUlvJKFSKtRRKDHAF4JFG+G5EBPGgFS/","SBtF0oMw4sbi","zAGFkp0l5sSp","NBiE4kco4yjj"],["yAuVegmiZBKDUKFQTzjKDFz2QM6SH7KEQ1ZQMMK0"],["ABEU8v/qtBT8GSUtJ2NKRMLxGJSF6PHGP0jHUG4P"],["YBDWZUZYbDPCV9NUS2c7VMOxQLNHGRU6YzgML84QtF"],["0BUORjixVEO3QtmNs83DiQb0cJxJp3xTyF09xBbI"],["8AnOnkJWFEpBELfxjPy8a9xT59fLo1SHSSZ41FRQhw"],["3ATRfXrZEGMxXwI3OV63KJXKd5eJr7SSRPXwPGp5UzVORPK1HBIOFKIxHv"],["5ABNb09h+P4KYivBn65/mCIQJUezhHzxoFlG0RQ0fQ","uAmOctItZp53m0Ium7i+"],["+AdTJkFxsFH6GQ6rT5SBlJGJGOc4R0IUGFZ4IvVRUHh5SQS5XNV0"],["bBhVuf8khAM9gKR2LKHMQC5EWvQWL2TKVKNKS4KNL0"],["QBlUUloeEAL6O2HKZMdxvS5BUJeLxER6KHNRGIcz"],["RBuPpyokSBMSUuyAoEKpQPHKX0QYS3kE5LYwZWc2PKM8KSNqxPk/","gApBcSoQq37M"],["jAUTDijhtADAQKYDVSgqULX4S5OHSU68LPW4QLUGMNotYAHIG0Fz"],["zA9PjSKyocY00XgpRLO4MTU158mKK2pOZOcHY6L2a6GQNSR4PwTWbCYwNyQ1HRTHFp","FBnJ4vsfzbaSZzMyNGfOeP4JW9","5AfIsXkoxZhK7TM3wR","NB2DQfIssX5QxW","tAnDoq4nXv6Z","SB9DY04W3qss","1A6DAm8k43tQbS","VAcB0o4g4thY","kAKC4OIZ4zmZ","cAYDwkwP5MQq"],["KBzG0b+lbEUK0xU03vTs","7AuDMRkvf08V","JCwHQZor49pa","oBcFYwctpz2j","gBVEox4j394RwQ","rArDAtwUV95QfT","FB8HYkwU53RPkP","5A5DkagQ4ziQpM","aAVB8UkN3y7TkR"],["DBqLTjwhRAW3QJq1zCxWp83GZxfMVzpWZBoK6IH0gKX5"],["9AbOri2kEAx72CTJTBGPezV4zNqEhLSW5skLm5i8"],["pAkKcToSGIczsIi6wDU7bFN4Q1ROJzGSiPdG5FmBdC09Z9"],["mAAMs09vzDAvwxo1LzdVsIFUNoQqMWdxdMXEEFJBMBL6XPI5c2oHJMe4eQH0pKZRU8h556SnKRWB","XAjB0j4S2AvU3JfR"],["/AoN1S1hHDYnj150hNV6jXisfCISLTfqbG58eTs2cIS9RKa7"],["DBSJsnUbsAIO8uQC5S26LNjNXF","VCmI4YwU46lb","3AdMEqAX55TqZ8JvO3"],["TBvMuiTebBoAyTn9nG17rJkDbKaKYFfLhuNzbMWuPQ5P"],["EB2NDR+jtEw0y8MaYuL0QQg4aYb8WN7zFHY5NjRNmOWHVJPwURnMM2sJ"],["gCZREfui5Ao6X6OHRIfFg5vS57ZUa1mLh/"],["FBfZ2iVy4GcfI1l6J5ZPcUe8Ws68reG3eJEKG9K0PwRWdTRz","0AcCYSEn3uuw","jA1FkQUl5xIx","DBOGcUQc54Rl","4BLFYeUV294e","PCMGYfYS2A1i","yBFHsp8O4ce8ui","jAiBod4Q0G2n","YAEBkiEP396Y"],["GBhOXRQpqFoOgmfCqE4DwAVZkCMWVsJF65JZOlN4LBJC","pAbEMoEj5ZQ3","3AyFMfMn5dRh","iAqCUS0i448WUR"],["eAZV7lEunSkA58Cht6TwTVL1gIG0GYM0SGUIIXLwQL"],["vA0SkiC0GHRAbFGPJ0FwF0zXuSrKV24OFNN0"],["kBQMX2nvdBl3nQb3zKT8vyjVQ3kHPMpIf05Sm7kOQpuO"],["5AcNuiRefAQ5n3qEUJxK73OOV1LyLMeUs9fMNzHyPKULo1MVZJl1x8"],["lACQPiR2nLYhY1PsL9QBDCK3T3OQLNr0T4O1HPkNXMK65HbFVLb2","/BZHoaAX4C5SgS","WBwF4i0SyrhR4h","AB1L4kgQS+KtZ1bK4MOMfINONuIPTrvUPM","uAcDAggd4wXm","HBVDMjItwJ2l"],["cBkQrnok3CYKWHYNlEXLeEZ5zmJMyMjKk9RC5PMIi/s8"],["lBMRFVHmpHKAPKa3pJ0FbDgKbR69e+MH"],["4ARRkTYnXF8SYt59QJY0FUOLhiZFVQLPq6PzOKOFlxxUPPr1","6AvC0vMY38wb","WA/AsQgR017R"],["dAVDDS6flG0M4j56QLZMeGsM","EBbKAoYlQE4ITPuHY5TSONMz","MAeB0N0k55Kv","OAQCkR4h5qKr","OAtAsOggtB2T"],["SB7XjlBs5Dl9N5bFQMQFGUODgir+5VnAMQkAS7"],["9AuSJQelbDsXAsP+sGDGSueHsP5PdCh9aHoRJz","WAPBI0EW4vjp","QALBM1MV4vYt"],["5AyHkhghzBISYzY75RZONOMJ","QBhVMg0gG3z3rQ5QPChT"],["tA8X7mImYA4YMypzQ8Ey5MHRzOd4JGNtQOMMiEGPH0","vALD0gYkdx4x","TAIBYh8kjB3v"],["tA9MZkx3MJ0k8sy9YAEHoM65YFaMvHl1eVOmNMPGVDREPISA","nA5BMTwk3+yX","sB+EUQIlx2zS3N","ZBxLALsdgCLJ5S","1AbC8S8e37wn","VACBgYwY35pr","OAvAMUIV3zpP","UA7AYc8r3yuv"],["qAzWileVACu77LIShvyQhKEubVmG"],["kAuQ5mnjTAjBeJhEr3oU5FhFsHCGFQky"],["YBpJu/wYsHMYcrzF4DrPRMrLu2","ABGI8Ucko4iI3O3FLKmJ","lAACAicl3spb","bAWBQbUh3ytS","sAeCUg4d30nb","oAQEIYITRs4JUH","iAhBYmAX3A3a","TAHBcl0Q4zjT","QAvA8p4S063T","bAVBE0wa3Crm","SA2A4xIdxY6W","YACBgvgf1b6V","RA+Akwcjkz4r","SAcBgyIT40Vp","VA7Asy8l00wt"],["sApMckE4AQcmUzbtS2RL55X9bJWDoGNJoIYId8W1bFj4FQfMmv","lA4C0W0OY+eO3U","UA5AEZQYyN5p"],["oAyOagizDLwfszo5m+ZOQFFuoGYKfLVy4OkOj4Y4MMSOGJI2RwTVY1N2","QA+DMzcSzxyG7WlMHI"],["6AnRrhKgYElAbvsRQQTtMMYKQwqM4OdsTRzKnDEX"],["cAvPDdYlvA6ALydNgGb3NMfTxHNvgLIw1PNPKKMSDu"],["2AIT9nrwcD59aER3SGFPQxIMJ3ENZNm6QHZ5MWX2i5"],["bBuLYiA1JMSAdJrytQ5C0OutQOO0yTtBfSguYOg8MOr1XL"],["PC3S9fOiTB5ASHUJR7bFW4kTk+TGgNPCNF"],["5AjROkMvsLMNgnfJ5GjEPTaMH5J1RQupK8aBEMVPQIPxRyM9iZIHO2SK","VAdHEf8Qs859MU4KCQty","xARCsuwR3w1O","NBJEMxIS3Kml","3AZDIoQl4BgQ","dAECElYob9px6s","8AADwoYh3zrl","pBRFQp8b3Bre","pBYIQsUa41Ye","hA9Bcioj41kb","aAQB4m8r3Bvl","SA/A0w8V37jq"],["dBTMBV0kmHURAONFs1mHTJ6QnI","2AMEkgoh4ImqYx","3AhG0mIq5I3AvpizMG"],["PBwX6P2lWCuAxQYxeXm85NTNVEeLF0hyGa"],["uBObkdzjrAq+Q+4NTJJPKIKwUOZugMKOGI"],["LBNUOdvkpAsM8nmBR85EkQmNY3TUGGG7U0","XBlEwSoY3+13om","fA4BkS8Z4Eio","bADDwQsd56WvQw","uAjC4U0cm91t","wAcDMZkc4Haj"],["nB5VqVuinH54QLHJM1I0ZFpSYMVKs0aL"],["BBwYJTbn5AEb0sbBfDTLeGGzKKNV55JtKRbHLQnLg9ZoPGW1","rArG8ccet7S9Mo54","OB1E0h4v4+hj"],["xBdVNiwwXBoCVJpHIISMMw5OPFZR"],["ZBNVgQploCsV4l5AoEeYGKVuWKIvJJYRe6LP","3BmJAbAn4EXi"],["bCIQYjAzsGZ8X3iAbGaHPR57hKh7eJdFeJ"],["jBRXGcq5FYP7OKOmtIlLVJ6JvJKVHxO2WZYm"],["FB1OutcraBvzi3y3KRnJdSWm4Kz5yYhCHvXMNVQsgOa0"],["FBiQ/yidmC8LMou2u5v8I36njDINR4","vA4FQY8ktzy29xc4Qyc1","qAHIgiokjtI6VyZ1QQ56fHQ8uql0z9P0QS"],["ECuPJpSugJR0f4bzqMbOV4QHT1RPeKjCrDtE4DPX"],["/BhO5nVt0Jq2jLkz3DPUO3aJWIw9f7SLoNp2ZH"],["TB+R4eV1mNEmI0I7bTI6I0MwROnIbFRK6+JIOJQKa+ZsQTJsMRaMK1KrVU","jAlBoX8cx66a"],["kAbYQmtsNMLzSJKNLwK2JLKmCM6LyaWHZ9LC"],["iAxTOiwwjIIiwcO7UFOKDwTyKxGNLQIqv1gDSTMyS162cvOtNKMJ","/AOGcXAdb0zHUKRR4B","lA1IYpISYsG5HL5MJQeM"],["LCrTWSMnyH5+hEOFOTPFS3hIXFO7KT"],["9A7F14RuKNwpIzx2j4SOhMT3nQryjXhM61","oA1IUlElXGgTjHz83NY3HPPMzrLFlWoHl0JUhv","wAQFoawU5iX1Qx30","wAqF0U4QsrQL4NjNRK","XAyBUiAf4rWk"],["tDOWYmysAFT7z2dTxPgr4QRItQm/"],["+AqNssd0pHh9cKm33TaJZ5zMJ1V0nWgEXOoHTx"],["iB9cjmff+Al8H4JGLUd5G4fN6QFINHV2"],["jAnEw+kgfBQP0nkwk5Q1SQ5XiFUG","gANFUbwi58QOvLVU","SBvF4pQp44dd","vBXFkvUgu65b","2AcCQyMa3+5W"],["0BLWhowrBmQrMqM1KWO3So5LwUaM10nVd8VKTF","vAwHIr4vY6eSuyns6yJ5","bAXDIw0j57URwP"],["7ARPQtJxwCW859UFVVP9QEN5XIM6G0bPxCMRjNb8imPBSVM5iPKu"],["WBGQPyMnGBm1N0NJTQYu4BbHrOaT464xcWOuTMRKILUp"],["7BUVSkx2AIq7oKeMSO54S5qWSKdOLuQ1"],["FBBOTmjtjJd2cFgLPzjQQt5OZ8cL1Ts9HKn0vF"],["RC+M4kRUBBx4gD0KUGkDn3QMoG4FZN57"],["VBOdFehivARxE3JwMUJKYwYLdT5CURQ+"],["mBliWiKtZON9SENtQP6NoUD3TJVK"],["XBzOsh2y3VW4cGVEY13HrNLNf0HRcKb1i8"],["OClSfk318Ib+W+3HdRQ4oMXKMIg0XL"],["yBhNGh2zpoP7wJv4QM3BaPW5ZLTN53"],["sBnecocYtLQ06IJJIMJFLHL4FHMHJ5"],["jABSAmaaJA8fY0mzRKV3h5aIIORxCQdKZHQrYL5KZ5","XAoBwh0m45Yr"],["6B3HFyQhrJ8Lwl47fLe8pYpG","KBnJIgEbN3Y0bEuzbMU1XtNI5qWBUGO1","KA1AUUcd4wXt","UAFBYKMl33hp","IAxAwL8i5vPt"],["YAEEEtrhsJseQ05tnzK+tnWH","dAHDkewu5vM1","lA7B4g8t3wml","nAKC4gkr30lr","3AdCEesq3zwo","oAKDUhAp4uTp","oByG0e0m4uec","yAaC4iEmul21","1A/CAfkg3rjz","9ADDYhohrs0m","iAyB0hgf3mm2xq","5A0C4gcc3mud","dAICwggaa+zR2R","kAVDIfsUT+7M","qAsCUewS44fa","cA1CQhwO5oRQ"],["yAiRleElhANAwGqAfK4No5UIQNTxgQ0RFw"],["WCnMliXuKtcMkuWC3HnYbG","CBCDcaIp381a","6BTNga0lQBzG4BXMWMuEsFPI"],["fAJCd+1iNI0yEQ4pfY","hAfB0UkV0d5Z","XAIBANcY3+nr","cAXBMNwj33nu","kAICQRooj40q","kA0Bga4o37ot","5A5CMeknrG1L","ZAUBId4k3vns","zASC0b4hz0yx","GBLEof0h46en","uAiEEjge53Ot","nAFCkn4Y3xlr","rAECkuEYu70n","1APDcsMb4Afl","3A0Cwrsg3zmn","3AqCgowi31so","XAXDImMkT33yLz","YAbBwnoni41v","VAMBUpErm03r","WAAB4rMl3yxq","UACB4lMyo2zt","QAlEYjwW51Ft"],["/A2eKdPntBZ5Ja6ukQOGJ6cPTQKwDOQxRQ"],["RADEOq8XTJ4UE051Gu","yAZCAeUe3zzN","xAcCYXkQ31zMtN","XAtCoo8Q5DRUrM"],["qAJQYOxn+GV8T8TIHxhOWJT3T0L1SMOUdEdKpBUM65I0Wse+DWZITBTD"],["uAnCH8xiNIcXwQ40kJuP","oAwCkosQ4Bam","sAaCUd0a3Jo1","eAVBgeAi1T3K","YAmBAfIl4Ber","6A1CAiYj37tk","aAUBMlIg3Aop","lA9CYmUk47Vl","kAJC0h8k4Dik","rA5CIbIj4dhYqF","rAxCkYIm4mgc","zAbDIXUj4kfc","UATBYPck4Dgm","9A3CQLsk3Lvj","lApBEOgn16z3","SAGEAVE051Ds","iAxBUsIi3Csn","QAtGcvIi57Bx","RA1AMzIq33rr","MA2AQnoY4Gdq","YAPBMrcg3Fpm","QADB0nAd4Mcs"],["sA0WUhfx3VVwPQi0H35LfQdPhCCIh0"],["oBKVAzKz4Cv8T8GTMw5WmHvHUSPJ"],["pBNXbj+wrEZ3o8XQNHKRhnR55YeIcHH9"],["EBdUyemtSDV8WJhOTCU0SPQvFKJ1cQ4VTFZ2RI"],["5ASNylnVmAmAl70TdH1E61aKN2GQ1NYGo7czHJhPfJ"],["KBXRFx5n+AMis0R1SMIvXEYQ3ySI5ZTpFOTJV4xM","PAJBkZUf41ZS"],["KBlXCj+WoE1AXAFHgYdwDP6wVQOHpHw8KT"],["mCdar9yfxSU6MJWIR5lLgJdK4J"],["VCSQKvFrqAw5s/r6dQ3QPFj71DSP"],["SBIT3g80IX8rAxN46LSLNtPJJ6IQQTdwK+MEaQf8FNYQRpUwML","7A0Jgc4qSMUHqDK+6hY8U5","MBdFYY8V4aY2","qAOHsXsV5gGwjx"],["4AbRE/fPBPkkwdYqMFh6fP5UY7GTFx","PBIIAlsfR84x0Bho0L29olv8mMfw","rAiCAVwNj15S"],["BCbbqQ3kdCJzRId8b+oS3FLXM0LIHDP3HM"],["qBZNYgalPAl9kLqEyE4J0EWxePgIuTsyLM"],["JChQVhoj+A5846YNmLj+LOfxgKWMT0ePPHW3"],["vC0P0jzwPElCpJnGcJpJV33JrLrHaH"],["FBYK6h93SQM9QERJPMUNSqJIRKiyk8v+v5nJYK5NzLm6eAOs4WiD"],["KBtNaqcpHR0hEtJ1a6cCUOSCU8fE5EqQyQk1P3lJ","0AaCoqkc3ryj","iAqBIh0Q3ksk","vA8EkhYu5OSq"],["ZBjO/sftJBPGUFdLWVNxK3YMdBRGdvfRTLt2NUMAZ0xXJz5F"],["mAgC73AjvCsTQM4Har","1AsC4YkQ3Hq2","VBvD4boW0B1j","+A1CIekZy4zp","wAnFobge56k2Z0Q2vt","SATBMaMa40cU","ABaEkiIi45cp","pARMQk8ld1kq58I0ZqSL"],["wCDXPmnsLCXKS7LJyW5B"],["OBoO3RmjGQwNko56x2dFZFbGZNVSY+M0S6J+bvXWYGVAU3","nABCAp4f3sqNlR","4AcC4VYa1z6Y"],["8AJPK6Oc4BsLArw8YGR+FQ5tFOnObGT3V3OI","rAoCAbkr4Egk","rAqNYeIig9Z4I4FSFt6zuhVP","hAqCgqIZ48Um","nAME0rYU54K0","OBgD0wwjyz34","SA1AIccjy22u"],["vBCPwV5VKDR5iJeyXLNxWTQ+YHqJjT4vmDSLXB"],["SBYOTSLbVDf4R4PPUOa2VzJ2dLjHRETQrC5En9JNLRpw"],["8B9Qg11lvBQpQZMkY7gB5hWRWsi1","rAGF8ikYPAq79wvvj4","WBBEAhMc3Htr","oAhCEkohgv1x","uAdCggkg3Flo","JBzE8ewgeO3x","hA/B4aAh4yho","SE9MkZke3quh","OBNF4mshdw39xpn2","qAIIQmshgP1xXMfIe3dx5xHSroa5l7"],["iBuSvj50bGJBrBfNSGe6MKO4WST7ZGj+eLf95O"],["vBQKYefvnJwCVNcNm2nF05yFyMmRx63Ip9m8RK"],["OC8PKpHqKbs2yHiBaFeJNK5FxEWC"],["uBJOk2BvaVElgWkJz466lyb7VwOOfzlJV0","lAUEQWwL5DOzgue6"],["bBjMIl0y3BnBpGh+cMy5dB3WcuoFQQqMl964pEN2"],["eBlOpkxxPEl1fFTxoUdMY64HxHKUz2gM"],["jApKsmT2eKcjolU8T9nBbEsUV7VaWsYvYNVS5ygCR8UzLROLR4OLa8WVL1JBFDP1PKT5SBPO","WAHBILAa3Bsq","3AsEYUQjWQ5Halg4V7","WAKB4R4h3Dop"],["ZBgSWlOfPAt2yH5PTyeNfDQMWLj2pLIN"],["cBBP2U7mzNApYeNaOEoBl7X4V05yy7SLKt","VBkGwp8Z4sx6kza5k226j0"],["VBTXKVnlOHX07GVEkQaKlFPDG7"],["8AWHHVQlNG4lY0O65K1G5S4N","0ASGQkEj5pQX","0A1C4nUf3tnb","XC1GEmYc3rze","QANBsgoW4qab","mAQDEfIT4qXU","5AlC0acPz73a","MBJEgYYNm76c"],["7BNOeBeaLFoe0ifXo1PC5om2","rA3KQfgdN56A65LxtymAf3"],["YC6RNikxrNWsf75FZKmEfPh5bUb4ZCO/"],["jBXIMhIgECMYwVemuz5rb0","rAAEYosvV92xWsZ2"],["SBfQTo2ppqn4W6wIS3RP5LdDxK5CUQHs"],["tA5T5c3lYBnA3IwEfVr+f9NS6PGqz1YK"],["aBJRoj7xgDS6iEWAO1kTT2gLVLJSb2QtlQfJ5+"],["TAMB3pKe9f8Nsm42jT","4AHDcMUil9qQ2U","jA3IkYUdK5PLh1vJjYFQ5tYW","ZAHC0bQb4uRyys","BB8FglMq57Pxwv","oA+BQtMoy1qs2v","QA3Ckv0r5xJz","YAQBYyIpqy2k","7ApCE0cb3hzc","aAKBckcv0C2l"],["lBLVpdZjYAl2bIJqHUIJy94NLKk8UPd6"],["WBLNdyhg//cdcs55S8LDKQ2HU1sTZ6e3kZnDTK","EBTDEm4n36p1","FB+D0sgooxp5rzn040","wAeHYRMcgy4sOuU4","mBrEMVgX32wl","nAuEsXYZO5dHou5r"],["0BVNCjQzSGP341jJmOkOY0kGg7uMaMWLa3"],["dBpLliaykKu9d3gFl8cPbNaEfzeDyO49OU33"],["hArBb8OcFB8LcmxHrB5k","FBqDEPEp33n5","sBTHsVwl46ch","RBaEod4imz35","tAUEMgMc55Tn","vApDMacfY243","hBaEYPsl2123zm","iA0D4aoY55Qj","2BrFIwUa35ui","fAcBAckgx93k","UACBMYcg3Aom"],["hBmRDo0gLAJ4e2aAWTeEnBYEn85ZfMm7rqLG"],["rAgNAltVxEV+lNMOOvJrLN5RkB3HbAZL2EELMPS1rxcbZsSK"],["OBkRnl8hUAsyMOUqdE6SZJM5fJkAXMTRU6Q4LLUyI1"],["/ASLWfKwmLgRkuv9i9qD4+cYTBK6T+K0YMXChHV6kNTKU9qEluTK","fAeBErMd3oxm","fAoCUtge48fxX0","ZAfBcxMg48eo"],["LBNYNuwiiCQYwyFAQI6DSGbKOHXKbDPDN/","QAPBkVYw40ZU","TAbC4VAs57QQ","SA1BEXEy5zQw"],["1A/OylPmeB5A5AeOK5QQm5oDbXcqeHWFRyHOvIiKk5DQ"],["+BKRMWVipJmA5BnTj2rJNPc7PuRSmKuAQHML"],["9AUKNju3uNAko0g4wIOOZ14Dh0ZMK4VDXHWTk/bGx7vExA","yACDQiET4pd5qm","OAGDMfgQ5sF1"],["IBFPUhyyaLfEYHMEQMWxI1OUUGcPlumXlriMWLerVZ5D"],["2A/fdmatXDbAQ9Q/DOOMW55IOOQOJxMG"],["rA9Sm1BqaRO7RPb+aAfDR8CONNP5hH5G"],["cB6NOsbvBBTAh1bHVQfSMywtwBoGhHpTu4lVS3Zt4GORWJR4Q0"],["hB3L3xfl6HUYeAxMb7T4NMl1lOZLdOtqaNgEYSP5aysZ7sm2X6"],["1ASMU2lcNB0Y0heChCi9W+VFdWpD4BrAOPNSIwPv","gAYDgfQo5pNs","vAFFIKoXQ8YC4vkp"],["XB6SOgdi2Aa+PQO1KIH65GR7RRYLpIc8SDL1"],["MAnA3AjXuDIZAMoD3n","uAWFwdQTp53nPm","aAECcdQY4wXk","PADBsfAc4qaw","GBZDshUh3rui","jA5BslYi3mit","hA+DAjgcO65Po+ZWwI","MAkBojol54TS","MAVB8mUy5uUU","QAyAoc4zuu7W"],["YBtNEVQkVR4MoOqGQGexM3R7bXrCNBZWn3VE4M","dAnI8pUsF753Q0qr"],["nAlK0huumD4fsM5Sl6hCiMc5Z9ZJaEXPRuFMRQIBbxWKcFYrrIgNO+W0","iAJCcm8j4Gfl"],["8A8M1l9v8EW6N7c6aIQ8e8GGSHdEfQy+4BVEUHUEOD"],["+AcKYqLvCLjbo9U2JGnPS5XKP2eRjNO2m4YKXKU0WLh769tTwB"],["IBIE2/mcvCQsgRrmiy7z","WAYBwsAY42gm","jAACwnIfjqo17q","RAkBci8ih36PUM","XARBIkAm34fp","WAHBQZQo3wqn","QAyAQa4vs00r","QAxAATYut72q","VALBUREz34lq"],["uBAWylIgWA5gU+PSVCIIR8KtWMTQN6SASPW+VLM+"],["0AkPblL0SC5+L2bHNQP3q7YOTJyDMINxODGQMMFGStL6a2ZHgS"],["CBvWqpypGocp8Q5eqIQcP3WCF8O4tCcVKNENJpI5IT","TAYC0ZMf5DOx","cAbBQVAf3Mpn","VAIBoSEho+0t","dA6CIdce5+Ro","dAOC8g8e4Fao"],["/ARV+fm0BKcWorTJGJEEKQOrSTw3I2VP6MXZJsVPIOQtMwITKvPQ","lAqD4XowstrF375ciGS6","qAmEUY8g10qRQKPyaO6P","sAiDUg8xYf4UXN","dAACQX0n4nda"],["NBvUWmidkAsSYweA5FQOL2KHT5cRXEMOJ1Q+YFSGGNQ3","ZADCEvck4tXb","kAjCgt8h4zea","cA0BguobeG4b"],["lAiITSjviZwNswm85NPyTHHZhCx1LbWxPPOvRK","UADRcZUh6AREMJctCDHTWFE8OGNzBOMPT0E5G3TVZ7RGYH","NArCYNMQ57XHIPrN"],["9BDOBWCSfGl4t+uCOMV7XHTEpG4DhLQEh9X/"],["5ApN796YqAcDyJa5PIRFX4PvUFLWYycZGKcwQ0ULeQ6+VAO2a6"],["bAjB796YqBwVo04yh6","aA+C8ZEy2ztFRu5w","oBqFIe0s2wmA4h","cAoEMWwrt1Ku5V2W","8ArE4Zck43aU","1AAD0eQjk26Z","8AgD8esg44ma","gAaCsfsb42bRhP","1A9CEk0U31pZ","jAzBQlsQ31rW","QAJBwnQM40dU","LAiA0pcP37wt","bAhB4d4n3pqN","bALBofcd21zl","KAgAkmERt23p"],["zAzKHUNkZIgfgReUtEhybARJR9lMGTkzUMt4O3fGSJY+gOb33QfvXK","YAoBslgr49ct"],["+AzJ0yaoJChBW8QKbBdTb5g1Z8bDWEdDnJv+hWXJaD1084h8RTOuL0"],["+BrO3nJm7AgrIsk0WNwD5BQDPPS9WGXMcDc1","YAzDkw8V5+2cJI","OBzD8rcU3+uf"],["FBEMCl1ZkAZAdxwQ0ENpZ1VMXAbM6IeMgAhKI3aGo+dJU8eJ"],["zBYQhl3YuAa+53SDiIREeJL9bEZDiLZD1F"]]var uC2i=e=>64<e&&e<91?e-65:e>96&&e<123?e-71:e>47&&e<58?e+4:43===e?62:47===e?63:0,uC2ii=(e,t)=>uC2i(e.charCodeAt(t))+64*uC2i(e.charCodeAt(t+1)),rdC=(e,t)=>{let n=128*uC2ii(cl[e][t],0)/4096,r=128*uC2ii(cl[e][t],2)/4096unC=(e,t,n)=>uC2i(e)/63*(n-t)+tlet i=cl[e][t],s=0,a=4+(0==t?6:0)+(cl[e].length>1?4:0),o=[],l={x:128*uC2ii(i,a-4)/4096,y:128*uC2ii(i,a-2)/4096}o.push(l)for(let e=ae<i.lengthe+=2){let t=unC(i.charCodeAt(e),n,r),c=s-unC(i.charCodeAt(e+1),0,360)*(e==a?-1:1),h={x:l.x+MaC(c*dToR)*t,y:l.y+MaS(c*dToR)*t}o.push(h),s=c,l=h}return o},rdG=e=>{let t=cl[e][0],n=uC2i(t.charCodeAt(4))n+=64*uC2i(t.charCodeAt(5)),n=n/4096*360-180let r=uC2i(t.charCodeAt(6))return r+=64*uC2i(t.charCodeAt(7)),r=r/4096*160-80,{x:n,y:r}},rdO=e=>{let t=cl[e][0],n=uC2i(t.charCodeAt(8))return n+=64*uC2i(t.charCodeAt(9)),4*n/4096},cC_SDF=(e,t)=>{let n=[{x:-1,y:-1},{x:0,y:-1},{x:1,y:-1},{x:-1,y:0},{x:1,y:0},{x:-1,y:1},{x:0,y:1},{x:1,y:1}],r=cl[t].length,i=-1e6,s=new Float32Array(e*e)for(var a=0a<e*ea++)s[a]=iwritePixel=(t,n,r)=>{s[n*e+t]=r},readPixel=(t,n)=>s[n*e+t]let o={x:1e9,y:1e9},l={x:-1e9,y:-1e9}for(let e=0e<re++){let n=rdC(t,e)for(let e=0e<n.lengthe++)o.x=Math.min(o.x,n[e].x),o.y=Math.min(o.y,n[e].y),l.x=Math.max(l.x,n[e].x),l.y=Math.max(l.y,n[e].y)}let c=e/2-(l.x+o.x)/2,h=e/2-(l.y+o.y)/2,A=[],m=[]for(let e=0e<re++){let n=rdC(t,e)for(let e=1e<n.lengthe++){let t=new Line2D({x:n[e-1].x+c,y:n[e-1].y+h},{x:n[e].x+c,y:n[e].y+h})A.push(t),m.push(rand.random_dec()-.75+1)}A.push(new Line2D({x:n[n.length-1].x+c,y:n[n.length-1].y+h},{x:n[0].x+c,y:n[0].y+h})),m.push(1)}if(187==t){let e=57,t=30for(let n=0n<A.lengthn++){let r=1.3A[n].S.x=A[n].S.x*r-e,A[n].S.y=A[n].S.y*r-t,A[n].E.x=A[n].E.x*r-e,A[n].E.y=A[n].E.y*r-t}}let d=(t,r)=>{let s=[]for(t.length>0){let a=[]for(let o=0o<t.lengtho++){let l=[],c=1e6,h={x:t[o].x,y:t[o].y}if(readPixel(h.x,h.y)==i){for(let e=0e<A.lengthe++){let t=A[e].UnDis(h)*m[e]t<c&&(c=t),t<4&&l.push(A[e])}if(l.length>0){let a=new Line2D({x:t[o].z,y:t[o].w},{x:h.x,y:h.y}),A=!1for(let e=0e<l.lengthe++){if(LinInt(a,l[e])){A=!0break}}if(A){writePixel(h.x,h.y,-r*c)for(let t=0t<n.lengtht++){let r=h.x+n[t].xif(r<0||e<=r)continuelet a=h.y+n[t].yif(!(a<0||e<=a)&&readPixel(r,a)==i){s.push({x:r,y:a,z:h.x,w:h.y})break}}continue}}writePixel(h.x,h.y,r*c)for(let t=0t<n.lengtht++){let r=h.x+n[t].xif(r<0||e<=r)continuelet s=h.y+n[t].ys<0||e<=s||readPixel(r,s)==i&&a.push({x:r,y:s,z:h.x,w:h.y})}}}t=a}return s},u=d([{x:0,y:0,z:-1,w:-1}],1)d(u,-1)let x=new BA.RawTexture(s,e,e,6,scene,!1,!1,2,1)return x.name="Country",x}class RandomFixed{constructor(){this.prngA=new function(){let e=124,t=456,n=789,r=101112return function(){e|=0,t|=0,n|=0,r|=0let i=(e+t|0)+r|0return r=r+1|0,e=t^t>>>9,t=n+(n<<3)|0,n=n<<21|n>>>11,n=n+i|0,(i>>>0)/4294967296}}for(let e=0e<1e6e+=2)this.prngA()}random_dec(){return this.prngA()}}var shufArr=e=>{let t=new RandomFixed,n=[],r=[]for(let i=0i<ei++)n.push(i),r.push(t.random_dec())return n.sort(((e,t)=>r[e]-r[t])),n}const tfVSrc=`
+attribute V2 position
+${VV2T}
+void main(void){
+vUV.x=(position.x+1.0)*0.5
+vUV.y=1.-(position.y+1.0)*0.5
+gl_Position=V4(position,0.,1.)}
+`,tfFSrc=`
+${VV2T}
+${US2} lutTex
+void main(void){
+FL xx=-gain(vUV.y,2.1)*(vUV.x*0.4)
+gl_FragColor=texture(lutTex,V2(vUV.x+xx,0.5))}
+`class ThinFilmGenerator{constructor(e){this._engine=engine,this._efRen=new BA.EffectRenderer(engine),this._efWrp=this._createEf(),this._rtF=this._createRT(),this._done=!1,this.texture=new BA.Texture(null,scene)var t=new Uint8Array(128),n=0let r=(e,r,i,s=255)=>{t[4*n]=e,t[4*n+1]=r,t[4*n+2]=i,t[4*n+3]=s,n++}0==e?(r(202,197,197,0),r(197,191,190,30),r(196,185,184,70),r(182,119,22,100),r(182,32,153,100),r(0,50,179,100),r(0,111,168)):1==e?(r(202,197,197,0),r(197,191,190,50),r(196,185,184,100),r(182,119,22,150),r(182,32,153,150),r(0,50,179,100),r(0,111,168,160)):(r(202,197,197,0),r(197,191,190,50),r(196,185,184,100),r(182,119,22,150),r(182,32,153,150),r(0,50,179,150),r(0,111,168)),r(18,182,180),r(154,182,86),r(181,115,36),r(182,31,127),r(67,45,181),r(0,142,168),r(24,182,56),r(103,181,42),r(181,49,98),r(181,49,119),r(181,78,107),r(38,181,121),r(13,182,144),r(35,182,176),r(181,82,90),r(180,96,96),r(180,93,100),r(48,145,181),r(20,177,182),r(40,181,149),r(181,130,65),r(180,92,94),r(181,78,104),r(103,84,154),r(45,181,155),this.clText=new BA.RawTexture(t,32,1,5,scene),this.clText.name="TFLut"}_createRT(){let e=engine.createRenderTargetTexture(64,{format:5,type:0,generateMipMaps:!1,generateDepthBuffer:!1,samplingMode:2})return engine.updateTextureWrappingMode(e.texture,1,0,0),e}_createEf(){let e="TFGen"return addVS(tfVSrc,e),addFS(tfFSrc,e),new BA.EffectWrapper({engine:engine,name:e,vertexShader:e,fragmentShader:e,samplerNames:["lutTex"],useShaderStore:!0})}run(){let e=this._efWrp.effectif(!e.isReady()||this._done)returnlet t=this._efRent.setViewport(),t.applyEffectWrapper(this._efWrp),e.setTexture("lutTex",this.clText),engine.bindFramebuffer(this._rtF,0,void 0,void 0,!0,0),t.applyEffectWrapper(this._efWrp),t.draw(),t.restoreStates(),engine.restoreDefaultFramebuffer(),this.texture._texture=this._rtF.texture,this.texture.name="TFTex",this.texture.wrapU=0,this.texture.wrapV=0,this._done=!0}}var sun2Cam=e=>(2.94-5.74)*(e-1.97)/(4.62-1.97)+5.74+Math.PI,ATRS=.015class WaterScene{constructor(){this.cTexGen=cC_SDF(256,countryIdx),this.oilc=rdO(countryIdx),tw.coc=Math.max(Math.min(this.oilc,1),0),this.oil_con_set=tw.coc<.09?0:tw.coc<.53?1:2let e=.470==this.oil_con_set?(tw.snf=[2,3,2],e=.46,this.extra_uW={r:0,g:rand.random_int(-2,2),b:0}):(tw.snf=[2,4,2],this.extra_uW={r:0,g:0,b:rand.random_int(-2,2)}),this.sky=new SkydomeGenerator,this.sky.ppp=e,this.sun=new Sun(countryIdx),this.sunDir=this.sun.getDir(dateAndTime.getLocalDate())let t=this.sun.calc(dateAndTime.getLocalDate())this.thinFilmGen=new ThinFilmGenerator(this.oil_con_set),this.thicknessGen=new ThicknessGenerator(this.cTexGen),this.wHGen=new WaterHeightGenerator,this.nrmHGen=new NormalFromHeight(this.wHGen.renderTarget),this.makeSeamless=new MakeSeamless(this.nrmHGen.renderTarget),this.camera=new BA.ArcRotateCamera("cam",-Math.PI/2+Math.PI,Math.PI/2.5,322,nv3(0,-40,0),scene)let n=this.cameran.attachControl(canvas,!0),n.lowerBetaLimit=.4,n.upperBetaLimit=.8,n.alpha=t.y/dToR>2.1?sun2Cam(t.x):4.611,n.beta=.722,n.radius=453,n.lowerRadiusLimit=150,n.upperRadiusLimit=500,n.maxZ=-500,scene.registerBeforeRender((()=>{this.sunDir=this.sun.getDir(dateAndTime.getLocalDate()),this.sky.run(this.sunDir,timer.runtime),this.thinFilmGen.run()}))}zoom(e){let t=this.camerat.radius=.993*t.radius+.007*(e?t.lowerRadiusLimit:t.upperRadiusLimit)}}var waterFSrc=`
+${VV3P}
+${VV3N}
+${VV2T}
+varying V3 vTangent
+varying V4 vHeights
+varying FL vflat
+varying V2 screP
+uniform mat4 world
+${UF} time
+${UF} camBeta
+${UV3} camPos
+${UV3} sunDirWorld
+${US2} oilSampler
+${US2} normalSampler
+${US2} thinFilmLUT
+FL fresnel_bias=0.3
+${UV2} NRM_DIRS[2]
+${UF} NRM_EF[2]
+${UF} NRM_TIL[2]
+${UF} NRM_SPE[2]
+${UV3} W_COL_SHAL
+${UV3} W_COL_DE
+struct TANGENT_FRAME{
+V3 normal
+V3 tangent
+V3 binormal
+}
+struct NORMAL_MAPS{
+V3 nNM[2]
+FL nEff[2]
+}
+V3 calcNormal(TANGENT_FRAME tanFr,NORMAL_MAPS nm){
+V3 ret=V3(0.)
+for(int i=0i<2i++){
+ret+=(tanFr.tangent*nm.nNM[i].x+tanFr.binormal*nm.nNM[i].y)*nm.nEff[i]}
+return nrZ(ret+tanFr.normal)}
+V3 getSpecCol(){
+V3 hi=V3(255.,253.,201.)
+V3 lo=V3(255.,146.,96.)
+return mix(hi,lo,remap(sunDirWorld.y,-0.5,-0.2))/256.0}
+V3 getUnderWaterColor(V3 viewDirW,V3 nrmW){
+V3 colS=W_COL_SHAL/255.0
+V3 colD=W_COL_DE/255.0
+FL weight=sat(-viewDirW.y-0.3+nrmW.y*0.5)
+V3 uwc=mix(colS,colD,weight)
+return uwc}
+NORMAL_MAPS getNormal(V2 uv,TANGENT_FRAME tanFr){
+NORMAL_MAPS ret
+for(int i=0i<2i++){
+ret.nNM[i]=tx2D(normalSampler,uv*NRM_TIL[i]+NRM_DIRS[i]*(0.4*time*NRM_SPE[i])).rgb-V3(0.5)
+ret.nEff[i]=NRM_EF[i]*vflat}
+return ret}
+FL getWaveThickness(NORMAL_MAPS nmS){
+FL ret=0.01*((remap(vHeights.x,-1.,1.)+remap(vHeights.y,-1.,1.)+remap(vHeights.z,-1.,1.))*3.+remap(vHeights.w,-1.,1.))
+ret+=(sat(nmS.nNM[0].x)*nmS.nEff[0]+sat(nmS.nNM[1].x)*nmS.nEff[1])*10.
+return ret}
+FL wave(FL x,FL t){
+return sat(pow(0.5*(1.+sin(50.*x+t*0.1)),300.0))}
+FL addCracks(FL tiks){
+return tiks-tiks*wave(fbm(V3(vUV*V2(3.,5.),time*0.05),8,true),time)*0.03}
+V4 getOilColor(V2 uv,V3 reflCl,TANGENT_FRAME tanFr,V3 vieDW,
+NORMAL_MAPS nmSamples,V3 nrmW,V3 skyNoise){
+V2 texc=(uv-V2(0.166))*1.5
+if((abs(texc.x-0.5)>0.5)||(abs(texc.y-0.5)>0.5)){
+return V4(0.)}
+V3 dirReflW=reflect(vieDW,nrmW)
+FL tiks=tx2D(oilSampler,texc).x
+if(tiks<=0.)return V4(0.)
+tiks=addCracks(tiks)
+FL wt=getWaveThickness(nmSamples)
+FL fTik=0.15+dot(reflCl,V3(0.33))*0.01
+FL wOuter=1.
+if(tiks>=0.5){
+FL tiks_si=intOCs(0.21,0.6,0.58,1.,0.98,1.)
+fTik+=(tiks-0.5)*tiks_si
+} else{
+FL tiks_so=intOCs(0.235,0.245,0.235)
+fTik+=(tiks-0.5)*tiks_so
+wOuter+=sqr(sat(-(tiks-0.5)*2.))*2.5}
+fTik=fTik*0.8+wt
+fTik*=0.9+mix(0.01,1.,sat(dot(reflCl,reflCl)))*0.2
+FL th=acos(sat(dot(dirReflW,nrmW)))/(PI*0.5)
+V4 oiC=tx2D(thinFilmLUT,V2(fTik,th))
+FL fresnel=gain(1.-sat(dot(-vieDW,nrmW)),0.8)
+FL sn=remap(skyNoise.x,0.8,1.)
+V3 skyNoise2=getSkyNoise(dirReflW.zxy)
+FL sn2=remap(skyNoise2.x,0.8,1.)
+#ifdef HIGH_ENERGY
+oiC.xyz*=max(pow(sn2,0.5),0.4)
+#endif
+FL nw=remap(sunDirWorld.y,-0.1,0.)
+V3 blue=mix(V3(0.,0.3,0.45),V3(0.,0.2,0.3),nw)
+oiC.xyz+=mix(blue,V3(0.),pow(sn,5.7))*0.5
+oiC.xyz*=3.*wOuter
+FL _ofb=mix(0.1,1.,camBeta)
+oiC.w*=clamp(tiks*2.,0.,2.)*sat((fresnel+_ofb)/(1.+_ofb))
+oiC.w*=mix(0.5,1.,pow(sat(abs(vHeights.x)),3.))
+oiC.w*=intOCs(0.45,0.55,0.45,0.65,0.55,0.65)
+oiC.w=sat(oiC.w)
+oiC.xyz=desat(oiC.xyz,-sat(1.-(fresnel+0.5))*0.5)
+oiC.xyz*=mix(1.,1.2,camBeta)
+return oiC}
+FL vignette(){
+FL l=length(screP)
+return mix(0.6,1.,sat(1.9-l))}
+void main(void){
+V3 vPositionW=V3(world*V4(vPosition,1.))
+V3 vNormalW=nrZ(V3(world*V4(vNormal,0.)))
+V3 vieDW=nrZ(vPositionW-camPos)
+V3 vTangentW=nrZ(V3(world*V4(vTangent,0.)))
+TANGENT_FRAME tanFr
+tanFr.normal=vNormalW
+tanFr.tangent=vTangentW
+tanFr.binormal=nrZ(cross(vNormalW,vTangentW))
+NORMAL_MAPS normalMaps=getNormal(vUV,tanFr)
+V3 nrmW=calcNormal(tanFr,normalMaps)
+V3 lightW=nrZ(-sunDirWorld)
+V3 dirReflW=reflect(vieDW,nrmW)
+V3 reflCl=sampleRefl(dirReflW).rgb
+V3 skyNoise=getSkyNoise(dirReflW)
+FL ndl=max(0.,dot(nrmW,lightW))
+FL Spec=pow(max(0.,dot(nrmW,nrZ(-vieDW+lightW))),30000.0)*2.
+FL fresnel=sat((gain(1.001-sat(dot(-vieDW,nrmW)),4.)+fresnel_bias)/(1.+fresnel_bias))
+V4 oiC=getOilColor(vUV,reflCl,tanFr,vieDW,normalMaps,nrmW,skyNoise)*(1.+pow(min(Spec/1.1,1.),4.))
+FL oilOp=sat(2.*oiC.w)
+V3 ovWatCol=mix(reflCl,clamp(reflCl,V3(0.),V3(1.)),oilOp)*mix(pow(skyNoise,V3(0.25)),V3(1.),oilOp)
+V3 unWatCol=getUnderWaterColor(vieDW,nrmW)
+unWatCol*=(1.+2.*ndl)
+ovWatCol+=getSpecCol()*(Spec*fresnel*3.6*(1.-oiC.w))
+V3 undeW=desat(mix(unWatCol,ovWatCol,fresnel),oilOp)
+V3 finalCol=mix(undeW,oiC.xyz*undeW,sat(oiC.w))
+gl_FC=V4(finalCol*vignette(),1.)}
+`,waterVSrc=`
+attribute V3 position
+attribute V2 uv
+uniform mat4 worldViewProjection
+${UF} time
+${VV2T}
+${VV3N}
+${VV3P}
+varying V3 vTangent
+varying V4 vHeights
+varying FL vflat
+varying V2 screP
+${UF} AMP_SCALE
+${UF} FREQU_SCALE
+${UF} SPEED_SCALE
+${UF} frequ[6]
+${UF} speeds[6]
+${UF} amplitudes[6]
+${UF} steepness[6]
+${UV2} centers[6]
+${UV3} camPos
+uniform mat4 world
+void main(void){
+V3 p=position
+FL heights[6]
+V3 n_calc=V3(0.,1.,0.)
+V3 b_calc=V3(1.,0.,0.)
+for(int i=0 i<6 i++){
+V2 dir=nrZ(centers[i]-position.xz)
+FL frq=frequ[i]*FREQU_SCALE
+FL speed=speeds[i]*SPEED_SCALE
+FL St=steepness[i]
+FL arg=(dir.x*p.x+dir.y*p.z+time*speed)*frq
+FL C=cos(arg)
+FL cos_term=C*amplitudes[i]*AMP_SCALE*St
+FL S=sin(arg)
+FL h=S*amplitudes[i]
+p.x+=cos_term*dir.x
+p.y+=h*AMP_SCALE
+p.z+=cos_term*dir.y
+FL WA=frq*amplitudes[i]*AMP_SCALE
+n_calc.x-=dir.x*WA*C
+n_calc.y-=St*WA*S
+n_calc.z-=dir.y*WA*C
+b_calc.x-=St*(dir.x*dir.x)*WA*S
+b_calc.y+=dir.x*WA*C
+b_calc.z-=St*dir.x*dir.y*WA*S
+heights[i]=S}
+V4 pWorld=world*V4(p,1)
+V3 viewDirWorld=pWorld.xyz-camPos.xyz
+vflat=1.-remap(1.-dot(V3(0.,-1.,0.),nrZ(viewDirWorld)),0.3,0.65)
+n_calc.xz*=vflat
+gl_Position=worldViewProjection*V4(p,1.)
+screP=gl_Position.xy/gl_Position.w
+vNormal=nrZ(n_calc)
+vTangent=nrZ(b_calc)
+vPosition=p
+vUV=uv
+vHeights.x=heights[0]
+vHeights.y=heights[1]
+vHeights.z=heights[2]
+vHeights.w=heights[3]
+}`class WaterGerstnerScene extends WaterScene{constructor(){super(),this.water=BA.MeshBuilder.CreateGround("water_surface",{width:4,height:4,subdivisions:512},scene),this.water.scaling=nv3(400,400,400),this.water.rotation.y=2*Math.PI,this.amp=[0,0,0,0,0,0],this.freq=[1,1,1,1,1,1],this.speeds=[1,1,1,1,1,1],this.dirs=[0,0,0,0,0,0],this.radii=[1e3,1e3,1e3,1e3,1e3,1e3],this.steep=[0,0,0,0,0,0],this.MIN_AMP=.1,this.MAX_AMP=.2let e=this.oil_con_setthis.setupWaves(e)let t=360*rand.random_dec(),n=this.oilc<.09?this.oilc/.09:this.oilc<.53?(this.oilc-.09)/(.53-.09):(this.oilc-.53)/.47,r=this.MIN_AMP+n*(this.MAX_AMP-this.MIN_AMP),i=0==this.oil_con_set?[0,80,30]:1==this.oil_con_set?[0,71,55]:[0,15,20],s=0==this.oil_con_set?[13,23,16]:1==this.oil_con_set?[8,15,20]:[0,5,7]s[0]+=this.extra_uW.r,s[1]+=this.extra_uW.g,s[2]+=this.extra_uW.blet a="water"addFS(intOCSSrc+sampleSkySrc+waterFSrc,a),addVS(waterVSrc,a)let o=[]2==this.oil_con_set&&o.push("#define HIGH_ENERGY"),this.shadMat=new BA.ShaderMaterial("shader",scene,{vertex:a,fragment:a},{attributes:["position","uv"],uniforms:["world","worldViewProjection"],samplers:["oilSampler","envCubemapSampler","skynCubemapSampler","thinFilmLUT","normalSampler"],defines:o})let l=this.shadMatl.setFloats("amplitudes",this.amp),l.setFloats("frequ",this.freq),l.setFloats("speeds",this.speeds),l.setFloats("NRM_EF",[.01,.01]),l.setFloats("NRM_TIL",[1.8,1.8]),l.setFloats("NRM_SPE",[.52,.714]),l.setVector3("W_COL_SHAL",nv3(i[0],i[1],i[2])),l.setVector3("W_COL_DE",nv3(s[0],s[1],s[2]))let c=[]for(let e=0e<this.dirs.lengthe++)c.push(MaC((this.dirs[e]+t)*dToR)*this.radii[e]),c.push(-MaS((this.dirs[e]+t)*dToR)*this.radii[e])l.setArray2("centers",c),l.setFloats("steepness",this.steep),l.setFloat("SPEED_SCALE",.2*this.WAVES_SPEED_SCALE),l.setFloat("AMP_SCALE",.01*r),l.setFloat("FREQU_SCALE",this.FREQU_SCALE/2),l.setFloat("oilCons",tw.coc),l.setTexture("oilSampler",this.thicknessGen.renderTarget),l.setTexture("normalSampler",this.makeSeamless.renderTarget)let h=[]for(let e=0e<2e++)h.push(MaC((this.nrmDir[e]+t)*dToR)),h.push(-MaS((this.nrmDir[e]+t)*dToR))l.setArray2("NRM_DIRS",h),scene.registerBeforeRender((()=>{var e=timer.runtimeif(l.setFloat("time",.25*e*.6),l.setFloat("camBeta",Math.min(Math.max(1-this.camera.beta/.8,0),1)),l.setVector3("camPos",this.camera.position),l.setVector3("sunDirWorld",nv3(this.sunDir.x,this.sunDir.y,this.sunDir.z)),this.thinFilmGen._done&&l.setTexture("thinFilmLUT",this.thinFilmGen.texture),this.sky.isInitialised){l.setTexture("envCubemapSampler",this.sky.texture)let e=timer.runtime-(timer.tchange+1)l.setFloat("cms",Math.min(Math.max(8*e,0),1))}})),this.water.material=l}setupWaves(e){let t=this.amp,n=this.freq,r=this.speeds,i=this.dirs,s=this.steep,a=this.radiiswitch(this.nrmDir=[160,180],this.WAVES_SPEED_SCALE=.3,this.FREQU_SCALE=2,this.MIN_AMP=.02,this.MAX_AMP=.025,e){case 0:t[0]=20,t[1]=13,n[0]=10,n[1]=5,r[0]=20,r[1]=15,i[1]=150,s[0]=.2,s[1]=.2,a[0]=8,a[1]=5,t[2]=10,t[3]=10.05,n[3]=25,n[2]=10,r[2]=10,r[3]=10,i[2]=10,s[2]=.1,i[3]=180+i[2]-3,s[3]=.1,a[2]=5,a[3]=4breakcase 1:t[0]=20,t[1]=11,n[0]=10,n[1]=8,r[0]=20,r[1]=15,i[1]=150,s[0]=.1,s[1]=.1,a[0]=8,a[1]=5,t[2]=15,t[3]=10.05,n[3]=25,n[2]=10,r[2]=15,r[3]=12,i[2]=10,s[2]=1.1,i[3]=180+i[2]-3,s[3]=.1,a[2]=3,a[3]=4breakcase 2:t[0]=15,t[1]=11,n[0]=10,n[1]=8,r[0]=20,r[1]=15,i[1]=150,s[0]=.5,s[1]=.5,a[0]=8,a[1]=5,t[2]=15,t[3]=10.05,n[3]=25,n[2]=10,r[2]=15,r[3]=12,i[2]=10,s[2]=1.5,i[3]=180+i[2]-3,s[3]=1.6,a[2]=3,a[3]=4,t[4]=2,t[5]=3,n[4]=35,n[5]=40,r[4]=20,r[5]=20,s[4]=1.2,s[5]=1.1,i[5]=180+i[4]-3,i[4]=180,a[4]=3,a[5]=4,this.MIN_AMP=.014,this.MAX_AMP=.016}}}class DateAndTime{getLocalDate(){return new Date}}var sh=shufArr(cl.length),dateAndTime=new DateAndTime,countryIdx=sh[mintNumber%cl.length],ws=new WaterGerstnerScenelet ziP=!1,zoP=!1function resizeCanvasToDisplaySize(e){let t=Math.min(window.innerWidth,window.innerHeight),n=te.width!==t||e.heighte.width=t,e.height=n}engine.runRenderLoop((function(){scene.render(),timer.update(),resizeCanvasToDisplaySize(canvas),ziP&&ws.zoom(!0),zoP&&ws.zoom(!1)})),window.addEventListener("keydown",(e=>{82===e.keyCode&&(ws.camera.useAutoRotationBehavior?ws.camera.useAutoRotationBehavior=!1:(ws.camera.useAutoRotationBehavior=!0,ws.camera.autoRotationBehavior.idleRotationSpeed=ATRS)),79===e.keyCode&&(ziP=!0),80===e.keyCode&&(zoP=!0),71===e.keyCode&&(engine.switchFullscreen(!0),engine.exitPointerlock(!0))})),window.addEventListener("keyup",(e=>{79===e.keyCode&&(ziP=!1),80===e.keyCode&&(zoP=!1)}))</script></body></html>

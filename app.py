@@ -11,7 +11,15 @@ def index():
 
 @app.route('/sketch_all')
 def sketch_all():
-    return render_template('sketch_all.html')
+    return render_template('sketch_string.html')
+
+@app.route('/sketch_gd')
+def sketch_gd():
+    return render_template('sketch_gd2.html')
+
+@app.route('/sketch_pix')
+def sketch_pix():
+    return render_template('sketch_pix.html')
 
 @app.route('/sketch<index>')
 def sketch(index):
